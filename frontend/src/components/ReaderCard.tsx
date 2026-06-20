@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bookmark,
@@ -10,6 +10,7 @@ import {
   FileText,
   Loader2,
   ListChecks,
+  Tag,
 } from 'lucide-react'
 import type { FeedItem, SummarizeResult } from '../types'
 import { itemsApi } from '../api/client'
@@ -23,6 +24,58 @@ interface Props {
   feedTitle?: string
 }
 
+// ---------------------------------------------------------------------------
+// Score helpers
+// ---------------------------------------------------------------------------
+function parseScore(item: FeedItem, result: SummarizeResult | null): number | null {
+  if (result?.importance_score != null) return result.importance_score
+  if (item.importance_score != null) return item.importance_score
+  return null
+}
+
+function parseKeywords(item: FeedItem, result: SummarizeResult | null): string[] {
+  if (result?.keywords?.length) return result.keywords
+  if (item.keywords) {
+    try { return JSON.parse(item.keywords) } catch { return [] }
+  }
+  return []
+}
+
+/** Score badge: color + label based on 1–10 value */
+function ScoreBadge({ score }: { score: number }) {
+  const s = Math.round(score * 10) / 10
+  const { bg, text, ring, label } =
+    score >= 8.5
+      ? { bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-600/20',    label: '极高' }
+      : score >= 6.5
+      ? { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-600/20', label: '重要' }
+      : score >= 4.5
+      ? { bg: 'bg-blue-50',   text: 'text-blue-700',   ring: 'ring-blue-600/20',   label: '一般' }
+      : { bg: 'bg-slate-100', text: 'text-slate-500',  ring: 'ring-slate-400/20',  label: '较低' }
+
+  return (
+    <span
+      title={`重要性评分：${s} / 10`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${bg} ${text} ${ring}`}
+    >
+      <span className="font-mono">{s}</span>
+      <span className="opacity-70">{label}</span>
+    </span>
+  )
+}
+
+/** Keyword chip */
+function KeywordChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500">
+      {label}
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export default function ReaderCard({
   item,
   onRead,
@@ -45,9 +98,11 @@ export default function ReaderCard({
       })
     : null
 
-  const tldr = summaryResult?.tldr ?? item.ai_tldr
-  const aiSummary = summaryResult?.summary ?? item.ai_summary
+  const tldr      = summaryResult?.tldr      ?? item.ai_tldr
+  const aiSummary = summaryResult?.summary   ?? item.ai_summary
   const highlights = summaryResult?.highlights ?? []
+  const score     = parseScore(item, summaryResult)
+  const keywords  = parseKeywords(item, summaryResult)
   const hasExpandable = aiSummary || item.raw_content || highlights.length > 0
 
   const handleSummarize = async (e: React.MouseEvent) => {
@@ -94,7 +149,7 @@ export default function ReaderCard({
 
           {/* Content */}
           <div className="min-w-0 flex-1">
-            {/* Title + actions */}
+            {/* Title row */}
             <div className="flex items-start justify-between gap-2">
               <a
                 href={item.link}
@@ -107,7 +162,10 @@ export default function ReaderCard({
                 <span className="truncate">{item.title}</span>
                 <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               </a>
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1.5">
+                {/* Score badge (if available) */}
+                {score != null && <ScoreBadge score={score} />}
+                {/* Star */}
                 <button
                   onClick={() => onStar?.(item.id, !starred)}
                   className={`rounded p-1.5 transition-colors ${
@@ -147,7 +205,17 @@ export default function ReaderCard({
               </div>
             )}
 
-            {/* Action row: expand + summarize */}
+            {/* Keywords row */}
+            {keywords.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Tag className="h-3 w-3 shrink-0 text-slate-400" />
+                {keywords.map((kw) => (
+                  <KeywordChip key={kw} label={kw} />
+                ))}
+              </div>
+            )}
+
+            {/* Action row */}
             <div className="mt-2 flex items-center gap-3">
               {hasExpandable && (
                 <button
@@ -219,16 +287,6 @@ export default function ReaderCard({
                       </div>
                     )}
 
-                    {/* AI Translation */}
-                    {item.ai_translation && (
-                      <div>
-                        <h4 className="mb-1.5 text-xs font-semibold text-slate-700">翻译</h4>
-                        <p className="text-[13px] leading-relaxed text-slate-600">
-                          {item.ai_translation}
-                        </p>
-                      </div>
-                    )}
-
                     {/* Raw content */}
                     {item.raw_content && (
                       <div>
@@ -243,12 +301,7 @@ export default function ReaderCard({
                         {item.raw_content.length > 3000 && (
                           <p className="mt-1 text-[11px] text-slate-400">
                             （仅显示前 3000 字符，
-                            <a
-                              href={item.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-brand-500 hover:underline"
-                            >
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline">
                               阅读完整原文
                             </a>
                             ）

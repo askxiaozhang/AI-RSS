@@ -24,7 +24,14 @@ async def get_session() -> AsyncSession:
         yield session
 
 async def init_db():
-    """Initializes the database schema (creates tables)."""
+    """Initializes the database schema (creates tables + incremental migrations)."""
     async with engine.begin() as conn:
-        # Create all tables defined in SQLModel
         await conn.run_sync(SQLModel.metadata.create_all)
+
+        # Incremental column additions — safe to re-run (IF NOT EXISTS)
+        migrations = [
+            "ALTER TABLE feed_items ADD COLUMN IF NOT EXISTS importance_score FLOAT",
+            "ALTER TABLE feed_items ADD COLUMN IF NOT EXISTS keywords TEXT",
+        ]
+        for sql in migrations:
+            await conn.execute(__import__("sqlalchemy").text(sql))
