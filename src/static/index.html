@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-RSS FeedCraft | AI-Driven Scraper & Parser</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Modern Design System with Glassmorphism & Cyberpunk accents */
+        :root {
+            --bg-base: #0a0c16;
+            --bg-surface: rgba(18, 20, 38, 0.7);
+            --bg-surface-hover: rgba(28, 31, 58, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(147, 51, 234, 0.6);
+            
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            --color-primary: hsl(265, 89%, 65%);
+            --color-primary-glow: rgba(147, 51, 234, 0.35);
+            --color-secondary: hsl(315, 90%, 60%);
+            --color-accent: hsl(175, 90%, 45%);
+            --color-success: hsl(142, 70%, 45%);
+            --color-warning: hsl(38, 92%, 50%);
+            
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 12, 22, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        header {
+            background: rgba(10, 12, 22, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--color-primary) 70%, var(--color-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Toggle Button styling */
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem;
+            border-radius: 30px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        .mode-toggle-option {
+            padding: 0.35rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 20px;
+            transition: var(--transition);
+            z-index: 2;
+        }
+
+        .mode-toggle-option.active {
+            color: #000;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+        }
+
+        .mode-toggle-option:not(.active) {
+            color: var(--text-secondary);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            flex-grow: 1;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        /* Left Panel / Sidebar */
+        .sidebar {
+            border-right: 1px solid var(--border-color);
+            background: rgba(12, 14, 27, 0.4);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .form-group label span.shortcut {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .input-control {
+            background: rgba(10, 10, 18, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .input-control:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-glow);
+        }
+
+        textarea.input-control {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            color: white;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px var(--color-primary-glow);
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 6px 20px var(--color-primary-glow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Preset Scrapers Grid */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .preset-btn i {
+            font-size: 0.85rem;
+        }
+
+        /* DOM Selectors Details Card */
+        .selectors-card {
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .selectors-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .selector-field {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .selector-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            width: 75px;
+            flex-shrink: 0;
+        }
+
+        .selector-input {
+            background: transparent;
+            border: none;
+            color: var(--color-accent);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            width: 100%;
+            outline: none;
+        }
+
+        /* Right Content Area */
+        .content-area {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            overflow: hidden;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        .content-pane {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0 0.5rem;
+        }
+
+        .pane-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #fff 50%, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pane-body {
+            flex-grow: 1;
+            overflow-y: auto;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 2rem;
+            gap: 1rem;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.6;
+        }
+
+        .empty-state h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Original Content List (RSS items) */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-row {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-row:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        .item-row.active {
+            border-left: 4px solid var(--color-primary);
+            background: rgba(147, 51, 234, 0.08);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .item-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            line-height: 1.4;
+            transition: var(--transition);
+        }
+
+        .item-row:hover .item-title {
+            color: var(--color-primary);
+        }
+
+        .item-link-icon {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .item-row:hover .item-link-icon {
+            color: var(--color-accent);
+            transform: translate(2px, -2px);
+        }
+
+        .item-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .item-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .item-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* AI Summarization Panel */
+        .summary-panel {
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .summary-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            gap: 1rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.5rem 0.5rem 0.75rem;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 2px;
+        }
+
+        .tab-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* TLDR styling */
+        .tldr-box {
+            background: rgba(147, 51, 234, 0.06);
+            border: 1px solid rgba(147, 51, 234, 0.15);
+            border-left: 4px solid var(--color-primary);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        /* Highlights styling */
+        .highlights-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .highlights-list li {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .highlights-list li::before {
+            content: '\f058';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--color-accent);
+            font-size: 0.9rem;
+        }
+
+        /* Loading Spinner Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 12, 22, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            gap: 1rem;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--color-primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .overlay-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Custom alert/status bar */
+        .status-bar {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-warning);
+            box-shadow: 0 0 8px var(--color-warning);
+            transition: var(--transition);
+        }
+
+        .status-dot.active {
+            background: var(--color-success);
+            box-shadow: 0 0 8px var(--color-success);
+        }
+
+        /* Banner notice */
+        .notice-banner {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            text-align: center;
+            background: linear-gradient(90deg, rgba(147, 51, 234, 0.2), rgba(236, 72, 153, 0.2));
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .notice-banner a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .notice-banner a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="notice-banner">
+        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AI-RSS Dashboard:</strong> AI-agent browses & returns DOM selectors, parser extracts HTML items, and AI summarizes.</span>
+    </div>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-square-rss"></i>
+            <span>AI-RSS FeedCraft</span>
+        </div>
+        
+        <div class="header-controls">
+            <div class="mode-toggle" id="apiModeToggle">
+                <span class="mode-toggle-option active" id="modeLive">Live API</span>
+                <span class="mode-toggle-option" id="modeSim">Simulated Demo</span>
+            </div>
+            
+            <div class="status-bar">
+                <span style="display:flex; align-items:center; gap:0.5rem;">
+                    <span class="status-dot" id="apiStatusDot"></span>
+                    <span id="apiStatusText">Connecting...</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            
+            <!-- Quick Presets -->
+            <div class="card">
+                <div class="panel-title">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Popular Parsers</span>
+                </div>
+                <div class="preset-grid" id="presetsGrid">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Configuration Form -->
+            <div class="card">
+                <div class="panel-title">
+                    <i class="fa-solid fa-gears"></i>
+                    <span>Configure Target</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Target URL</label>
+                    <input type="url" id="targetUrl" class="input-control" placeholder="https://example.com/blog" value="https://news.ycombinator.com/">
+                </div>
+                
+                <div class="form-group">
+                    <label>AI Scrape Instructions</label>
+                    <textarea id="instructions" class="input-control" placeholder="Describe what elements to look for, e.g. posts, dates, links.">Extract the list of front-page news items, including rank, title, link, and score.</textarea>
+                </div>
+                
+                <button class="btn" id="btnAnalyze" style="margin-top: 0.5rem;">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    <span>1. AI-Agent Analyze Structure</span>
+                </button>
+            </div>
+
+            <!-- DOM Selectors (Returned by AI-Agent) -->
+            <div class="card selectors-card" id="selectorsCard" style="display: none;">
+                <div class="panel-title">
+                    <i class="fa-solid fa-code"></i>
+                    <span>AI-Detected DOM Selectors</span>
+                </div>
+                
+                <div class="selectors-grid">
+                    <div class="selector-field">
+                        <span class="selector-label">Containers</span>
+                        <input type="text" id="selContainer" class="selector-input" value="">
+                    </div>
+                    <div class="selector-field">
+                        <span class="selector-label">Titles</span>
+                        <input type="text" id="selTitle" class="selector-input" value="">
+                    </div>
+                    <div class="selector-field">
+                        <span class="selector-label">Links</span>
+                        <input type="text" id="selLink" class="selector-input" value="">
+                    </div>
+                    <div class="selector-field">
+                        <span class="selector-label">Descriptions</span>
+                        <input type="text" id="selDesc" class="selector-input" value="">
+                    </div>
+                </div>
+                
+                <p id="selectorsExplanation" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4; border-top: 1px solid var(--border-color); padding-top: 0.5rem;"></p>
+
+                <button class="btn btn-secondary" id="btnParse" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>2. Parse & Extract Items</span>
+                </button>
+            </div>
+            
+        </aside>
+
+        <!-- Right Content & Summaries Area -->
+        <main class="content-area">
+            
+            <!-- Top Column: Original Content & Parsed Elements -->
+            <section class="content-pane">
+                <div class="pane-header">
+                    <h3><i class="fa-solid fa-globe"></i> Original Content & Extracted RSS Items</h3>
+                    <span id="itemsCountBadge" style="font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.25rem 0.50rem; border-radius: 12px; border: 1px solid var(--border-color);">0 items</span>
+                </div>
+                
+                <div class="pane-body" id="itemsPaneBody">
+                    <!-- Spinner overlay -->
+                    <div class="overlay" id="itemsOverlay">
+                        <div class="spinner"></div>
+                        <div class="overlay-text" id="itemsOverlayText">Crawling webpage and extracting items...</div>
+                    </div>
+                    
+                    <!-- Content list -->
+                    <div id="itemsContainer" class="items-list">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <h4>Ready for Crawler Agent</h4>
+                            <p>Configure a target URL on the left panel, and click "AI-Agent Analyze Structure" to start mapping the DOM tree layout using LLMs.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bottom Column: AI Summarizer & Highlights -->
+            <section class="content-pane">
+                <div class="pane-header">
+                    <h3><i class="fa-solid fa-brain"></i> AI Summary & Deep Digest</h3>
+                </div>
+                
+                <div class="pane-body" id="summaryPaneBody">
+                    <!-- Spinner overlay -->
+                    <div class="overlay" id="summaryOverlay">
+                        <div class="spinner"></div>
+                        <div class="overlay-text">Synthesizing feed digests and highlights...</div>
+                    </div>
+
+                    <div id="summaryContainer" style="height: 100%;">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <h4>AI Insight Pending</h4>
+                            <p>Once articles are extracted in the panel above, click on any article to generate an instantaneous multi-tier AI summary below.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+        </main>
+        
+    </div>
+
+    <!-- Script Area -->
+    <script>
+        // Preset Site data
+        const presets = [
+            {
+                name: "Hacker News",
+                url: "https://news.ycombinator.com/",
+                icon: "fa-solid fa-y-combinator",
+                instructions: "Extract the list of front-page news items, including rank, title, link, and score.",
+                selectors: {
+                    container_selector: "tr.athing",
+                    title_selector: "span.titleline > a",
+                    link_selector: "span.titleline > a",
+                    description_selector: "+ tr span.score",
+                    explanation: "Identified standard HN table rows where article metadata is split across sibling rows."
+                },
+                mockItems: [
+                    { title: "Show HN: Antigravity IDE - Agentic Coding Ecosystem", link: "https://github.com/google-deepmind/antigravity", description: "350 points by google-team 2 hours ago" },
+                    { title: "Why RSS is returning as the core protocol of the AI web", link: "https://rss.dev/posts/ai-web", description: "182 points by feed_lover 4 hours ago" },
+                    { title: "Building a production RAG with pgvector and FastAPI", link: "https://fastapi.tiangolo.com/tutorial/rag", description: "95 points by pycoder 6 hours ago" },
+                    { title: "The beauty of semantic filters instead of keyword matching", link: "https://news.ycombinator.com/item?id=123", description: "210 points by crawler_king 8 hours ago" }
+                ],
+                mockSummary: {
+                    tldr: "This Hacker News feed highlights major announcements regarding agentic IDEs, RSS resurging as an AI protocol, and FastAPI RAG integrations.",
+                    highlights: [
+                        "DeepMind showcases 'Antigravity IDE', a state-of-the-art agentic developer coding terminal ecosystem.",
+                        "RSS feeds are regaining massive adoption as standardized parsing protocols optimized for LLM consumption.",
+                        "A comprehensive guide explores postgres + pgvector integration for vector semantic filters."
+                    ],
+                    summary: "The front page is dominated by talks of next-generation AI agents and developer tooling. The top post details DeepMind's Antigravity IDE, which supports custom agent pipelines. Another prominent thread discusses how traditional RSS feeds have become highly useful as clean data feeds for LLMs, prompting a major revival in aggregators. Lastly, technical discussions around building FastAPI web applications with hybrid vector semantic search highlight current engineering trends."
+                }
+            },
+            {
+                name: "TechCrunch",
+                url: "https://techcrunch.com/",
+                icon: "fa-solid fa-laptop-code",
+                instructions: "Extract the latest tech startup posts: title, link, description.",
+                selectors: {
+                    container_selector: "div.wp-block-post",
+                    title_selector: "h2.wp-block-post-title a",
+                    link_selector: "h2.wp-block-post-title a",
+                    description_selector: "div.wp-block-post-excerpt p",
+                    explanation: "Identified wordpress standard block post containers containing post titles and brief excerpt elements."
+                },
+                mockItems: [
+                    { title: "AI-RSS closes $12M Series A to build the semantic aggregator of the future", link: "https://techcrunch.com/2026/06/19/ai-rss-funding", description: "The startup aims to completely replace traditional search-based alert trackers with proactive LLM agents." },
+                    { title: "A new paradigm: Code editors are coding themselves now", link: "https://techcrunch.com/2026/06/19/agentic-ides", description: "How Google DeepMind's Antigravity project is changing the dynamic between developers and AI compilers." },
+                    { title: "Vector DBs reach consolidation phase as Postgres dominates the space", link: "https://techcrunch.com/2026/06/18/vector-db-consolidation", description: "With extensions like pgvector showing high capability, specialized databases are facing stiff competition." }
+                ],
+                mockSummary: {
+                    tldr: "TechCrunch covers AI-RSS securing $12M for semantic feed aggregators, the rise of agentic compilers, and Postgres' pgvector eating the vector database space.",
+                    highlights: [
+                        "Startup AI-RSS secures $12M to deploy autonomous LLM agents that crawl any URL and parse structures on-demand.",
+                        "Developers shift to interactive environments where AI agents execute terminal runs and refine files in real-time.",
+                        "Specialized vector databases face severe pressure as standard relational databases build out fast index extensions."
+                    ],
+                    summary: "Today's tech announcements show deep structural shifts in both software tooling and venture capital. AI-RSS has raised a significant $12M Series A to advance dynamic website parsing using autonomous agents. Meanwhile, the IDE space is rapidly evolving into an environment where human engineers pair program with AI systems capable of running commands and compiling code independently. In the database market, standard relational SQL systems are effectively consolidating vector-search requirements via extension ecosystems."
+                }
+            },
+            {
+                name: "GitHub Changelog",
+                url: "https://github.blog/changelog/",
+                icon: "fa-brands fa-github",
+                instructions: "Extract the GitHub changelog entries: title, link, description.",
+                selectors: {
+                    container_selector: "article.post",
+                    title_selector: "h2.post-title a",
+                    link_selector: "h2.post-title a",
+                    description_selector: "div.entry-content p",
+                    explanation: "Identified standard article element container layout with h2 elements containing anchor tags pointing to full release logs."
+                },
+                mockItems: [
+                    { title: "Copilot Extensions are now generally available in the web editor", link: "https://github.blog/changelog/2026-06-19-copilot-extensions", description: "You can now customize your editing environment with custom commands directly integrated into the online workspace." },
+                    { title: "Introducing secure workspace secrets gating for background workflows", link: "https://github.blog/changelog/2026-06-18-workspace-secrets", description: "Enhance security by ensuring background processes have read-only access unless explicitly authorized by the developer session." }
+                ],
+                mockSummary: {
+                    tldr: "GitHub announces the GA release of web Copilot Extensions and introduces tighter access security controls for workspace developer secrets.",
+                    highlights: [
+                        "GitHub Copilot Extensions officially roll out to all active web-based development workspaces.",
+                        "New safety frameworks restrict background command execution runs from accessing sensitive token keys without session approvals.",
+                        "Updates aim to streamline developer operations while mitigating agentic leakage risks."
+                    ],
+                    summary: "GitHub's latest release cycle focuses heavily on developer security and extending editor versatility. Copilot Extensions are now globally available, enabling developers to build direct API connectors right within their browser sessions. To counter security threats from automated systems, a new credentials gating mechanism has been implemented, strictly isolating environment secrets from unauthorized background tasks."
+                }
+            }
+        ];
+
+        // App state
+        let isLiveMode = true;
+        let selectedPreset = null;
+        let activeParsedItems = [];
+
+        // DOM elements
+        const modeLive = document.getElementById('modeLive');
+        const modeSim = document.getElementById('modeSim');
+        const apiStatusDot = document.getElementById('apiStatusDot');
+        const apiStatusText = document.getElementById('apiStatusText');
+        const targetUrl = document.getElementById('targetUrl');
+        const instructions = document.getElementById('instructions');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+        const btnParse = document.getElementById('btnParse');
+        const selectorsCard = document.getElementById('selectorsCard');
+        const selContainer = document.getElementById('selContainer');
+        const selTitle = document.getElementById('selTitle');
+        const selLink = document.getElementById('selLink');
+        const selDesc = document.getElementById('selDesc');
+        const selectorsExplanation = document.getElementById('selectorsExplanation');
+        
+        const itemsPaneBody = document.getElementById('itemsPaneBody');
+        const itemsContainer = document.getElementById('itemsContainer');
+        const itemsOverlay = document.getElementById('itemsOverlay');
+        const itemsOverlayText = document.getElementById('itemsOverlayText');
+        const itemsCountBadge = document.getElementById('itemsCountBadge');
+        
+        const summaryPaneBody = document.getElementById('summaryPaneBody');
+        const summaryContainer = document.getElementById('summaryContainer');
+        const summaryOverlay = document.getElementById('summaryOverlay');
+        const presetsGrid = document.getElementById('presetsGrid');
+
+        // Initialize App
+        function init() {
+            renderPresets();
+            checkAPIStatus();
+            setupEventListeners();
+        }
+
+        // Check Backend API Connection Status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('/api/agents/analyze-structure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: 'https://news.ycombinator.com/' })
+                });
+                
+                // If endpoint responds (even with errors or code), the server is alive
+                if (response.status === 200 || response.status === 500) {
+                    apiStatusDot.classList.add('active');
+                    apiStatusText.innerText = 'Connected';
+                    isLiveMode = true;
+                    updateModeToggleUI();
+                } else {
+                    setOfflineMode();
+                }
+            } catch (error) {
+                setOfflineMode();
+            }
+        }
+
+        function setOfflineMode() {
+            apiStatusDot.classList.remove('active');
+            apiStatusText.innerText = 'Offline (Demo Mode)';
+            isLiveMode = false;
+            updateModeToggleUI();
+        }
+
+        function updateModeToggleUI() {
+            if (isLiveMode) {
+                modeLive.classList.add('active');
+                modeSim.classList.remove('active');
+            } else {
+                modeLive.classList.remove('active');
+                modeSim.classList.add('active');
+            }
+        }
+
+        // Render Preset Scrapers List
+        function renderPresets() {
+            presetsGrid.innerHTML = presets.map((p, idx) => `
+                <button class="preset-btn" onclick="applyPreset(${idx})">
+                    <i class="${p.icon}"></i>
+                    <span>${p.name}</span>
+                </button>
+            `).join('');
+        }
+
+        // Apply Preset Site details
+        window.applyPreset = function(index) {
+            selectedPreset = presets[index];
+            targetUrl.value = selectedPreset.url;
+            instructions.value = selectedPreset.instructions;
+            
+            // Add slight highlight animations
+            targetUrl.style.borderColor = 'var(--color-primary)';
+            instructions.style.borderColor = 'var(--color-primary)';
+            setTimeout(() => {
+                targetUrl.style.borderColor = '';
+                instructions.style.borderColor = '';
+            }, 500);
+        };
+
+        // Event listeners
+        function setupEventListeners() {
+            // Live / Demo switch click
+            document.getElementById('apiModeToggle').addEventListener('click', () => {
+                isLiveMode = !isLiveMode;
+                updateModeToggleUI();
+                if (isLiveMode) {
+                    checkAPIStatus();
+                } else {
+                    apiStatusDot.classList.remove('active');
+                    apiStatusText.innerText = 'Demo Active';
+                }
+            });
+
+            // Run AI-Agent Analyze DOM Click
+            btnAnalyze.addEventListener('click', runAnalyzeDOM);
+
+            // Run Parser Extract Items Click
+            btnParse.addEventListener('click', runParseElements);
+        }
+
+        // Step 1: Run AI-Agent structure analysis
+        async function runAnalyzeDOM() {
+            const urlValue = targetUrl.value.trim();
+            if (!urlValue) {
+                alert('Please enter a valid target URL.');
+                return;
+            }
+
+            // Show items pane overlay loading
+            itemsOverlayText.innerText = 'AI Agent crawling page & analyzing DOM elements...';
+            itemsOverlay.classList.add('active');
+            
+            // Reset right pane content
+            itemsContainer.innerHTML = '';
+            summaryContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <h4>AI Insight Pending</h4>
+                    <p>Waiting for DOM parsing to finish above before generating a summary.</p>
+                </div>
+            `;
+            selectorsCard.style.display = 'none';
+
+            try {
+                let data = null;
+                if (isLiveMode) {
+                    const response = await fetch('/api/agents/analyze-structure', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: urlValue })
+                    });
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        throw new Error('API server returned error code ' + response.status);
+                    }
+                } else {
+                    // Simulated Mode
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate networking lag
+                    // Find if url matches a preset
+                    const matched = presets.find(p => urlValue.includes(p.url) || p.url.includes(urlValue));
+                    if (matched) {
+                        data = matched.selectors;
+                    } else {
+                        data = {
+                            container_selector: 'div.post-card, article',
+                            title_selector: 'h2.title, a.post-link',
+                            link_selector: 'a.post-link',
+                            description_selector: 'p.excerpt',
+                            explanation: 'Heuristic selector analysis guessed typical class layouts for article cards.'
+                        };
+                    }
+                }
+
+                // Fill CSS selector fields
+                selContainer.value = data.container_selector || 'article';
+                selTitle.value = data.title_selector || 'h2';
+                selLink.value = data.link_selector || 'a';
+                selDesc.value = data.description_selector || 'p';
+                selectorsExplanation.innerText = data.explanation || 'No structure explanation details available.';
+                
+                // Show selectors card
+                selectorsCard.style.display = 'block';
+                selectorsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // Auto trigger parser right away to make UX smooth
+                runParseElements();
+                
+            } catch (err) {
+                console.error(err);
+                alert('Analysis failed. Switched to Simulated Demo mode. Click again to run.');
+                isLiveMode = false;
+                updateModeToggleUI();
+                setOfflineMode();
+                itemsOverlay.classList.remove('active');
+            }
+        }
+
+        // Step 2: Run parser using the CSS selectors to extract items list
+        async function runParseElements() {
+            const urlValue = targetUrl.value.trim();
+            const containerVal = selContainer.value.trim();
+            const titleVal = selTitle.value.trim();
+            const linkVal = selLink.value.trim();
+            const descVal = selDesc.value.trim();
+
+            if (!urlValue || !containerVal) {
+                alert('URL and Container Selector are required.');
+                return;
+            }
+
+            itemsOverlayText.innerText = 'Parser traversing DOM elements and building RSS list...';
+            itemsOverlay.classList.add('active');
+
+            try {
+                let data = null;
+                if (isLiveMode) {
+                    const response = await fetch('/api/agents/parse-elements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: urlValue,
+                            container_selector: containerVal,
+                            title_selector: titleVal,
+                            link_selector: linkVal,
+                            description_selector: descVal
+                        })
+                    });
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        throw new Error('API server returned error ' + response.status);
+                    }
+                } else {
+                    // Simulated Mode
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const matched = presets.find(p => urlValue.includes(p.url) || p.url.includes(urlValue));
+                    if (matched) {
+                        data = { items: matched.mockItems, items_count: matched.mockItems.length };
+                    } else {
+                        data = {
+                            items: [
+                                { title: "Extracted post 1 from web page", link: urlValue + "/post/1", description: "Successfully extracted using custom selectors from DOM." },
+                                { title: "Extracted post 2 from web page", link: urlValue + "/post/2", description: "Successfully extracted using custom selectors from DOM." }
+                            ],
+                            items_count: 2
+                        };
+                    }
+                }
+
+                activeParsedItems = data.items;
+                itemsCountBadge.innerText = `${data.items_count} items`;
+                itemsOverlay.classList.remove('active');
+
+                if (data.items_count === 0) {
+                    itemsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-circle-exclamation" style="color: var(--color-warning);"></i>
+                            <h4>No Items Found</h4>
+                            <p>The parser ran successfully but returned 0 items. Adjust the CSS selectors on the left sidebar to match the webpage's structure.</p>
+                        </div>
+                    `;
+                } else {
+                    renderItems(data.items);
+                    // Automatically trigger summarization of the first item
+                    triggerAISummary(0);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert('Parsing elements failed. Running with simulated fallback items.');
+                itemsOverlay.classList.remove('active');
+                
+                // Fallback rendering
+                const matched = presets.find(p => urlValue.includes(p.url) || p.url.includes(urlValue));
+                const items = matched ? matched.mockItems : [
+                    { title: "Extracted post 1 from web page", link: urlValue + "/post/1", description: "Successfully extracted using custom selectors from DOM." }
+                ];
+                activeParsedItems = items;
+                itemsCountBadge.innerText = `${items.length} items`;
+                renderItems(items);
+                triggerAISummary(0);
+            }
+        }
+
+        // Render the list of items
+        function renderItems(items) {
+            itemsContainer.innerHTML = items.map((item, idx) => `
+                <div class="item-row" id="itemRow_${idx}" onclick="triggerAISummary(${idx})">
+                    <div class="item-header">
+                        <a href="${item.link}" target="_blank" class="item-title" onclick="event.stopPropagation();">${escapeHtml(item.title)}</a>
+                        <a href="${item.link}" target="_blank" class="item-link-icon" onclick="event.stopPropagation();">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                    <div class="item-desc">${escapeHtml(item.description || 'No excerpt text content extracted.')}</div>
+                    <div class="item-meta">
+                        <span><i class="fa-solid fa-link"></i> ${getHostName(item.link || targetUrl.value)}</span>
+                        <span><i class="fa-solid fa-clock"></i> Just extracted</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Trigger AI summary for a selected item
+        async function triggerAISummary(index) {
+            // Update active item styling
+            const rows = document.querySelectorAll('.item-row');
+            rows.forEach(r => r.classList.remove('active'));
+            const activeRow = document.getElementById(`itemRow_${index}`);
+            if (activeRow) activeRow.classList.add('active');
+
+            const item = activeParsedItems[index];
+            if (!item) return;
+
+            // Show summary overlay loading
+            summaryOverlay.classList.add('active');
+
+            try {
+                let data = null;
+                if (isLiveMode) {
+                    const response = await fetch('/api/agents/summarize-content', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: item.title,
+                            content: item.description || item.title
+                        })
+                    });
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        throw new Error('API server returned error ' + response.status);
+                    }
+                } else {
+                    // Simulated Mode
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    // Check if matched preset has a pre-built summary
+                    const urlVal = targetUrl.value;
+                    const matched = presets.find(p => urlVal.includes(p.url) || p.url.includes(urlVal));
+                    if (matched && matched.mockSummary) {
+                        data = matched.mockSummary;
+                    } else {
+                        data = {
+                            tldr: `Article "${item.title}" discusses the key techniques of automated content scraping.`,
+                            highlights: [
+                                `Focuses on using raw CSS selectors generated dynamically by an AI crawler agent.`,
+                                `Examines parsing efficiency of using lightweight selectors on clean HTML bodies.`,
+                                `Demonstrates instant generation of summaries using Gemini LLMs.`
+                            ],
+                            summary: `The text detail from "${item.title}" outlines basic concepts in web structure analysis. An AI agent acts as a crawler by browsing the target website, simplifying the raw DOM, and returning the most reliable selectors representing lists. A developer or user can inspect, adjust, and parse those element structures on the frontend to fetch original contents. Following parsing, an AI layer generates multi-tier digests including TL;DRs, bullet highlights, and full summary overviews.`
+                        };
+                    }
+                }
+
+                renderSummary(item.title, data);
+                summaryOverlay.classList.remove('active');
+
+            } catch (err) {
+                console.error(err);
+                summaryOverlay.classList.remove('active');
+                
+                // Fallback rendering
+                const data = {
+                    tldr: `TL;DR: Summary of "${item.title}" generated using offline local template parser.`,
+                    highlights: [
+                        `Analyzed element containing "${item.title.substring(0, 20)}..."`,
+                        `Parsed metadata properties using the CSS container selectors.`,
+                        `Synthesizing highlights without an online model connection.`
+                    ],
+                    summary: `This is a simulated fallback summary. To view live AI generation, ensure your Gemini or OpenAI API keys are correctly set in the root .env file and relaunch the FastAPI application server.`
+                };
+                renderSummary(item.title, data);
+            }
+        }
+
+        // Render AI Summary inside container
+        function renderSummary(title, summaryData) {
+            summaryContainer.innerHTML = `
+                <div class="summary-panel">
+                    <h4 style="font-family:'Outfit', sans-serif; font-size:1.05rem; font-weight:700; line-height:1.4; color:var(--text-primary); border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.75rem;">
+                        <i class="fa-solid fa-hashtag" style="color:var(--color-primary);"></i>
+                        ${escapeHtml(title)}
+                    </h4>
+
+                    <!-- Tab Buttons -->
+                    <div class="summary-tabs">
+                        <button class="tab-btn active" onclick="switchTab(event, 'tabTldr')">TL;DR</button>
+                        <button class="tab-btn" onclick="switchTab(event, 'tabHighlights')">Highlights</button>
+                        <button class="tab-btn" onclick="switchTab(event, 'tabDigest')">Full Digest</button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content">
+                        <!-- TLDR Pane -->
+                        <div class="tab-pane active" id="tabTldr">
+                            <div class="tldr-box">
+                                <i class="fa-solid fa-quote-left" style="color:var(--color-primary); font-size:0.8rem; margin-right:0.35rem; opacity:0.8;"></i>
+                                ${escapeHtml(summaryData.tldr)}
+                            </div>
+                        </div>
+
+                        <!-- Highlights Pane -->
+                        <div class="tab-pane" id="tabHighlights">
+                            <ul class="highlights-list">
+                                ${summaryData.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Full Digest Pane -->
+                        <div class="tab-pane" id="tabDigest">
+                            <p style="color:var(--text-secondary); text-align:justify;">${escapeHtml(summaryData.summary)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Switch summary tab
+        window.switchTab = function(event, tabId) {
+            // Deactivate all tabs
+            const tabs = event.target.parentElement.querySelectorAll('.tab-btn');
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            const panes = event.target.parentElement.nextElementSibling.querySelectorAll('.tab-pane');
+            panes.forEach(p => p.classList.remove('active'));
+
+            // Activate current
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // Utility helpers
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getHostName(url) {
+            try {
+                return new URL(url).hostname;
+            } catch (e) {
+                return url;
+            }
+        }
+
+        // Run setup
+        init();
+    </script>
+</body>
+</html>
