@@ -6,6 +6,7 @@ import {
   Rss,
   Filter,
   MessageSquare,
+  BookOpen,
   LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: '仪表盘', end: true },
   { to: '/analyze', icon: Sparkles, label: 'AI 解析', end: false },
   { to: '/feeds', icon: Rss, label: '订阅源', end: false },
+  { to: '/reader', icon: BookOpen, label: '阅读', end: false },
   { to: '/filter', icon: Filter, label: '智能过滤', end: false },
   { to: '/chat', icon: MessageSquare, label: '对话助手', end: false },
 ]

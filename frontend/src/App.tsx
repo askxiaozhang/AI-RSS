@@ -9,6 +9,7 @@ import Feeds from './pages/Feeds'
 import FeedDetail from './pages/FeedDetail'
 import Chat from './pages/Chat'
 import FilterView from './pages/FilterView'
+import ReaderView from './pages/ReaderView'
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const token = useAuthStore((s) => s.token)
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="feeds" element={<Feeds />} />
         <Route path="feeds/:feedId" element={<FeedDetail />} />
         <Route path="filter" element={<FilterView />} />
+        <Route path="reader" element={<ReaderView />} />
         <Route path="chat" element={<Chat />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

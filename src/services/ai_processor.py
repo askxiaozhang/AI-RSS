@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Optional, List, Dict, Any
@@ -11,6 +12,8 @@ class AIProcessor:
         self.gemini_client = None
         self.openai_client = None
         self.anthropic_client = None
+        # Limit concurrent LLM calls to avoid API throttling (429s)
+        self._semaphore = asyncio.Semaphore(1)
 
         # Initialize Gemini client if API key is provided
         if settings.GEMINI_API_KEY:
@@ -51,6 +54,10 @@ class AIProcessor:
 
     async def _call_llm(self, prompt: str, system_prompt: Optional[str] = None) -> Optional[str]:
         """Call LLM with a plain-text prompt, return the raw text response or None on failure."""
+        async with self._semaphore:
+            return await self._call_llm_inner(prompt, system_prompt)
+
+    async def _call_llm_inner(self, prompt: str, system_prompt: Optional[str] = None) -> Optional[str]:
         # 1. Gemini
         if self.gemini_client:
             try:
@@ -74,7 +81,10 @@ class AIProcessor:
                 if system_prompt:
                     kwargs["system"] = system_prompt
                 response = await self.anthropic_client.messages.create(**kwargs)
-                return response.content[0].text.strip()
+                # Skip ThinkingBlock entries (extended thinking); find first TextBlock
+                text_block = next((b for b in response.content if hasattr(b, "text")), None)
+                if text_block:
+                    return text_block.text.strip()
             except Exception as e:
                 logger.error(f"Anthropic LLM call failed: {e}")
 
@@ -97,6 +107,10 @@ class AIProcessor:
 
     async def _call_llm_json(self, prompt: str, system_prompt: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Call LLM expecting a JSON response. Parses and returns the dict, or None on failure."""
+        async with self._semaphore:
+            return await self._call_llm_json_inner(prompt, system_prompt)
+
+    async def _call_llm_json_inner(self, prompt: str, system_prompt: Optional[str] = None) -> Optional[Dict[str, Any]]:
         # 1. Gemini
         if self.gemini_client:
             try:
@@ -125,7 +139,11 @@ class AIProcessor:
                 if system_prompt:
                     kwargs["system"] = system_prompt
                 response = await self.anthropic_client.messages.create(**kwargs)
-                text = response.content[0].text.strip()
+                # Skip ThinkingBlock entries; find first TextBlock
+                text_block = next((b for b in response.content if hasattr(b, "text")), None)
+                if not text_block:
+                    return None
+                text = text_block.text.strip()
                 if text.startswith("```"):
                     text = text.split("```")[1]
                     if text.startswith("json"):

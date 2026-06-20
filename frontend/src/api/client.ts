@@ -8,6 +8,7 @@ import type {
   ChatConversation,
   ChatMessage,
   AgentTestResult,
+  SummarizeResult,
 } from '../types'
 
 const api = axios.create({
@@ -48,11 +49,14 @@ export const authApi = {
       `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
     ),
+  // 后门登录 - 开发/测试用
+  backdoor: () => api.post<Token>('/auth/backdoor'),
 }
 
 /* ---------- Feeds ---------- */
 export const feedsApi = {
   listSubscriptions: () => api.get<Subscription[]>('/feeds/subscriptions'),
+  listFeeds: () => api.get<Feed[]>('/feeds/'),
   create: (data: {
     title: string
     url: string
@@ -66,24 +70,37 @@ export const feedsApi = {
     ai_filter_rules?: string
     is_active?: boolean
   }) => api.post<Subscription>('/feeds/subscribe', data),
+  updateFeed: (id: string, data: { refresh_interval?: number; title?: string }) =>
+    api.patch<Feed>(`/feeds/${id}`, data),
   updateSubscription: (id: string, data: Partial<Subscription>) =>
     api.put<Subscription>(`/feeds/subscriptions/${id}`, data),
 }
 
 /* ---------- Items ---------- */
 export const itemsApi = {
+  listAll: (params?: { days?: number; feed_id?: string }) =>
+    api.get<FeedItem[]>('/items/', { params }),
   listUnread: (folder?: string) =>
     api.get<FeedItem[]>('/items/unread', { params: folder ? { folder_name: folder } : {} }),
   markRead: (id: string, read = true) =>
     api.post(`/items/${id}/read`, null, { params: { read } }),
   markStarred: (id: string, starred = true) =>
     api.post(`/items/${id}/star`, null, { params: { starred } }),
+  summarize: (id: string) =>
+    api.post<SummarizeResult>(`/items/${id}/summarize`),
 }
 
 /* ---------- Agents (URL → RSS) ---------- */
 export const agentsApi = {
   testCrawl: (url: string, instructions: string) =>
     api.post<AgentTestResult>('/agents/test-crawl', { url, instructions }),
+  fetchPreview: (url: string) =>
+    api.post<{ title: string; html: string }>('/agents/fetch-preview', { url }),
+  previewSelector: (url: string, selector: string) =>
+    api.post<{ count: number; items: { title: string; link: string; description: string }[] }>(
+      '/agents/preview-selector',
+      { url, selector },
+    ),
 }
 
 /* ---------- Chat ---------- */

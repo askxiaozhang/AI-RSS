@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Rss, AlertCircle, Check } from 'lucide-react'
 import AnimatedPage from '../components/AnimatedPage'
 import FeedCard from '../components/FeedCard'
-import EmptyState from '../components/EmptyState'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import { feedsApi } from '../api/client'
 import type { Feed, Subscription } from '../types'
@@ -12,23 +11,45 @@ import type { Feed, Subscription } from '../types'
 export default function Feeds() {
   const navigate = useNavigate()
   const [subs, setSubs] = useState<Subscription[]>([])
-  const [feeds, setFeeds] = useState<Record<string, Feed>>({})
+  const [feedsMap, setFeedsMap] = useState<Record<string, Feed>>({})
+  const [allFeeds, setAllFeeds] = useState<Feed[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [newFolder, setNewFolder] = useState('Uncategorized')
   const [adding, setAdding] = useState(false)
+  const [subscribingId, setSubscribingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadFeeds()
   }, [])
 
   const loadFeeds = async () => {
+    setError('')
     try {
-      const { data } = await feedsApi.listSubscriptions()
-      setSubs(data)
-      // We don't have a list-all-feeds endpoint, so we use the subscription's feed_id
-      // and fetch feed details if needed. For now, render with what we have.
+      const [subsRes, feedsRes] = await Promise.allSettled([
+        feedsApi.listSubscriptions(),
+        feedsApi.listFeeds(),
+      ])
+
+      let subsData: Subscription[] = []
+      let feedsData: Feed[] = []
+
+      if (subsRes.status === 'fulfilled') {
+        subsData = subsRes.value.data
+        setSubs(subsData)
+      } else {
+        setError('加载订阅列表失败，请刷新重试')
+      }
+
+      if (feedsRes.status === 'fulfilled') {
+        feedsData = feedsRes.value.data
+        const map: Record<string, Feed> = {}
+        feedsData.forEach((f) => { map[f.id] = f })
+        setFeedsMap(map)
+        setAllFeeds(feedsData)
+      }
     } finally {
       setLoading(false)
     }
@@ -54,8 +75,24 @@ export default function Feeds() {
     }
   }
 
+  const handleQuickSubscribe = async (feed: Feed) => {
+    setSubscribingId(feed.id)
+    try {
+      await feedsApi.subscribe({ feed_id: feed.id, folder_name: 'Uncategorized' })
+      await loadFeeds()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSubscribingId(null)
+    }
+  }
+
+  const subscribedFeedIds = new Set(subs.map((s) => s.feed_id))
+  const unsubscribedFeeds = allFeeds.filter((f) => !subscribedFeedIds.has(f.id))
+
   return (
     <AnimatedPage>
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">订阅源</h1>
@@ -72,6 +109,14 @@ export default function Feeds() {
         </button>
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* Add form */}
       <AnimatePresence>
         {showAdd && (
@@ -84,9 +129,7 @@ export default function Feeds() {
           >
             <div className="space-y-3 p-5">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
-                  Feed URL
-                </label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Feed URL</label>
                 <input
                   type="url"
                   value={newUrl}
@@ -97,9 +140,7 @@ export default function Feeds() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
-                  分类文件夹
-                </label>
+                <label className="mb-1 block text-xs font-medium text-slate-600">分类文件夹</label>
                 <input
                   type="text"
                   value={newFolder}
@@ -129,49 +170,117 @@ export default function Feeds() {
         )}
       </AnimatePresence>
 
-      {/* Grid */}
       {loading ? (
         <LoadingSkeleton count={6} />
-      ) : subs.length === 0 ? (
-        <EmptyState
-          title="还没有订阅"
-          description="添加你喜欢的 RSS 源，或者用 AI 解析任意网站生成订阅"
-          action={
-            <button
-              onClick={() => navigate('/analyze')}
-              className="rounded-lg bg-gradient-to-r from-brand-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md"
-            >
-              去 AI 解析
-            </button>
-          }
-        />
       ) : (
-        <motion.div
-          layout
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {subs.map((sub, i) => (
-            <motion.div
-              key={sub.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <FeedCard
-                feed={{
-                  id: sub.feed_id,
-                  title: sub.feed_id.slice(0, 8),
-                  url: sub.feed_id,
-                  feed_type: 'standard',
-                  refresh_interval: 3600,
-                  created_at: sub.created_at,
-                }}
-                subscription={sub}
-                onClick={() => navigate(`/feeds/${sub.feed_id}`)}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+        <>
+          {/* My subscriptions */}
+          {subs.length > 0 && (
+            <section className="mb-8">
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                我的订阅 · {subs.length}
+              </h2>
+              <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {subs.map((sub, i) => {
+                  const feed = feedsMap[sub.feed_id]
+                  return (
+                    <motion.div
+                      key={sub.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                    >
+                      <FeedCard
+                        feed={feed ?? {
+                          id: sub.feed_id,
+                          title: '加载中…',
+                          url: '',
+                          feed_type: 'standard',
+                          refresh_interval: 21600,
+                          created_at: sub.created_at,
+                        }}
+                        subscription={sub}
+                        onClick={() => navigate(`/feeds/${sub.feed_id}`)}
+                        onFeedUpdated={(updated) =>
+                          setFeedsMap((prev) => ({ ...prev, [updated.id]: updated }))
+                        }
+                      />
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
+            </section>
+          )}
+
+          {/* Unsubscribed system feeds */}
+          {unsubscribedFeeds.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {subs.length === 0 ? '可用订阅源 · 点击一键订阅' : '更多可订阅'}
+              </h2>
+              <motion.div layout className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {unsubscribedFeeds.map((feed, i) => (
+                  <motion.div
+                    key={feed.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="group relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-white/60 p-4 backdrop-blur transition-all hover:border-brand-300 hover:shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-semibold text-slate-700 group-hover:text-brand-700">
+                          {feed.title}
+                        </h3>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-400">{feed.url}</p>
+                      </div>
+                      <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
+                        feed.feed_type === 'agent_crawled'
+                          ? 'bg-purple-50 text-purple-700 ring-purple-600/10'
+                          : 'bg-emerald-50 text-emerald-700 ring-emerald-600/10'
+                      }`}>
+                        {feed.feed_type === 'agent_crawled' ? 'AI 抓取' : 'RSS'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleQuickSubscribe(feed)}
+                      disabled={subscribingId === feed.id}
+                      className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 py-1.5 text-[12px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-50"
+                    >
+                      {subscribingId === feed.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <Rss className="h-3.5 w-3.5" />
+                          订阅
+                        </>
+                      )}
+                    </button>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </section>
+          )}
+
+          {/* Truly empty — no feeds at all */}
+          {subs.length === 0 && unsubscribedFeeds.length === 0 && (
+            <div className="flex flex-col items-center gap-4 py-20 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                <Rss className="h-7 w-7 text-slate-400" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-700">还没有任何订阅源</p>
+                <p className="mt-1 text-sm text-slate-400">添加 RSS 链接或用 AI 解析任意网站</p>
+              </div>
+              <button
+                onClick={() => navigate('/analyze')}
+                className="rounded-lg bg-gradient-to-r from-brand-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md"
+              >
+                去 AI 解析
+              </button>
+            </div>
+          )}
+        </>
       )}
     </AnimatedPage>
   )

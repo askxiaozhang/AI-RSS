@@ -1,98 +1,232 @@
+<div align="center">
+
+<img src="docs/screenshots/dashboard.png" alt="AI-RSS Dashboard" width="800" />
+
 # AI-RSS
 
-AI-RSS is an advanced news aggregation and analysis system. Unlike traditional RSS readers, AI-RSS incorporates a powerful AI layer using Gemini or OpenAI models to:
-1.  **Crawl Dynamic Web Pages**: Convert any website without standard RSS feeds into custom RSS feeds based on natural language instructions.
-2.  **Semantic Filter**: Filter out noise and irrelevant content using sophisticated semantic matching rather than simple keywords.
-3.  **Summarize & Translate**: Generate instant TL;DRs, bullet-pointed highlights, and translate foreign language feeds to your preference.
-4.  **Chat with Feeds (RAG)**: Search and query your entire subscription history via conversational QA.
+**把任意网站变成 AI 驱动的 RSS 订阅源**
+
+将 AI 能力融入传统 RSS 阅读，无论是手动添加 Feed 链接、还是用可视化交互选取任意网页元素生成自定义订阅，都能获得 AI 自动摘要、语义过滤和多语言翻译。
+
+[![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
+
+</div>
 
 ---
 
-## 📂 Project Structure
+## ✨ 功能亮点
 
-```
-workdir/
-├── pyproject.toml              # Project dependencies (FastAPI, SQLModel, arq, google-genai)
-├── docker-compose.yml          # Postgres + pgvector and Redis local services
-├── main.py                     # CLI entrypoint to start Web Server or Background Worker
-├── DESIGN.md                   # Detailed feature plans & database schema designs
-│
-├── src/                        # Main Application Code
-│   ├── main.py                 # FastAPI app definition and lifespan hooks
-│   ├── config.py               # Pydantic Settings configuration (loads from .env)
-│   │
-│   ├── api/                    # HTTP Endpoints (auth, feeds, items, agents, chat)
-│   ├── core/                   # DB engine, security helpers
-│   ├── models/                 # SQLModel Database & Pydantic definitions
-│   ├── services/               # Parsers, web scrapers, AI agents, and RAG services
-│   └── tasks/                  # Background worker jobs (arq)
-│
-└── tests/                      # Automated test suite
-```
+| 功能 | 说明 |
+|------|------|
+| **标准 RSS 订阅** | 支持 RSS / Atom / JSON Feed，自动抓取并同步 |
+| **可视化 AI 抓取** | 打开任意网页，浏览模式/选取模式切换，点击文章卡片即可生成自定义 Feed |
+| **AI 摘要 & TL;DR** | 每篇文章自动生成一句话总结、三条要点、150 字概览 |
+| **语义智能过滤** | 用自然语言描述过滤规则，AI 帮你筛掉不感兴趣的内容 |
+| **多语言翻译** | 自动将外语文章翻译为用户首选语言 |
+| **自定义抓取间隔** | 每个订阅源可独立设置刷新频率（1小时～1周） |
+| **对话助手** | 基于 RAG 与订阅内容对话问答 |
+| **阅读状态追踪** | 已读 / 未读 / 收藏，多维度筛选与搜索 |
 
 ---
 
-## 🚀 Getting Started
+## 📸 界面预览
 
-### 1. Prerequisites & Environment
-Ensure you have the following installed:
-*   [Docker](https://www.docker.com/) (for running database and queue services)
-*   Python 3.12+
+### 智能阅读器
+> 左侧栏：全部 / 未读 / 收藏 视图切换 + 时间范围 + 订阅源过滤（含未读计数）  
+> 文章列表：AI TL;DR 摘要一行展示，支持展开全文、一键 AI 解析、收藏标记
 
-Create and activate your virtual environment:
-```bash
-# Create the virtual environment (if not already done)
-uv venv
+<img src="docs/screenshots/reader.png" alt="Reader View" width="800" />
 
-# Activate the virtual environment
-source .venv/bin/activate
+---
+
+### 订阅源管理
+> 卡片式展示所有订阅，显示类型标签（RSS / AI 抓取）、文件夹分类、最后抓取时间  
+> 每张卡片可直接修改抓取间隔，未订阅的系统源一键订阅
+
+<img src="docs/screenshots/feeds.png" alt="Feeds Management" width="800" />
+
+---
+
+### AI 可视化抓取
+> 输入任意网址后进入双模式交互界面：  
+> **浏览模式** — 像普通浏览器一样点击链接跳转，找到文章列表页  
+> **选择模式** — 点击文章卡片，AI 自动识别同类重复元素并预览提取结果  
+> 确认后一键订阅，无需手写 CSS 选择器
+
+<img src="docs/screenshots/analyze.png" alt="AI URL Analyzer" width="800" />
+
+---
+
+## 🏗 技术架构
+
+```
+┌─────────────────────────────────────────────────┐
+│              React 18 + TypeScript               │
+│         Vite · Tailwind · Framer Motion          │
+└────────────────────┬────────────────────────────┘
+                     │ REST API
+┌────────────────────▼────────────────────────────┐
+│           FastAPI (Python 3.12+)                 │
+│   Auth · Feeds · Items · Agents · Chat           │
+└──────┬─────────────┬──────────────┬─────────────┘
+       │             │              │
+┌──────▼──┐   ┌──────▼──┐   ┌──────▼──────────────┐
+│PostgreSQL│   │  Redis  │   │    AI Providers      │
+│ SQLModel │   │  arq    │   │ Anthropic / OpenAI   │
+│ pgvector │   │ worker  │   │ Gemini / Dashscope   │
+└──────────┘   └─────────┘   └─────────────────────┘
 ```
 
-Install dependencies:
+**后端**
+- [FastAPI](https://fastapi.tiangolo.com) — 异步 REST API
+- [SQLModel](https://sqlmodel.tiangolo.com) — ORM（基于 SQLAlchemy + Pydantic）
+- [arq](https://arq-docs.helpmanual.io) — Redis 异步任务队列，定时抓取 Feed
+- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) — HTML 解析与元素选取
+- [feedparser](https://feedparser.readthedocs.io) — RSS/Atom 解析
+
+**前端**
+- [React 18](https://react.dev) + [TypeScript](https://typescriptlang.org)
+- [Vite](https://vitejs.dev) — 构建工具
+- [Tailwind CSS](https://tailwindcss.com) — 样式
+- [Framer Motion](https://www.framer.com/motion/) — 动画
+- [Zustand](https://zustand-demo.pmnd.rs) — 状态管理
+
+**AI**
+- 统一 LLM 调用层，按优先级依次尝试：Gemini → Anthropic → OpenAI
+- 支持 Anthropic-compatible 第三方接口（如阿里云灵积 Dashscope）
+
+---
+
+## 🚀 快速开始
+
+### 前置依赖
+
+- [Docker](https://www.docker.com/) — 运行 PostgreSQL 和 Redis
+- Python 3.12+
+- Node.js 18+
+- [uv](https://docs.astral.sh/uv/) — Python 包管理
+
+### 1. 克隆并安装依赖
+
 ```bash
-uv sync --index https://pypi.org/simple
+git clone <repo-url> && cd ai-rss
+
+# Python 依赖
+uv sync
+
+# 前端依赖
+cd frontend && npm install && cd ..
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory:
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env`，至少配置一个 AI 服务的 API Key：
+
 ```env
-# AI Keys
-GEMINI_API_KEY=your_gemini_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-
-# DB / Redis Connections
+# 数据库 & Redis
 DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@localhost:5432/ai_rss
 REDIS_URL=redis://localhost:6379
+
+# AI Provider — 至少配置一个
+GEMINI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# 使用 Anthropic-compatible 第三方接口（可选）
+ANTHROPIC_BASE_URL=https://your-proxy-url/anthropic
+ANTHROPIC_MODEL=your-model-name
 ```
 
-### 3. Spin Up Infrastructure
-Start PostgreSQL (with `pgvector` extension) and Redis using Docker Compose:
+### 3. 一键启动
+
 ```bash
-docker-compose up -d
+chmod +x dev.sh && ./dev.sh
 ```
 
-### 4. Run the Web Server
-Start the FastAPI server:
-```bash
-python main.py
-# Or run directly via uvicorn:
-# uvicorn src.main:app --reload
-```
-Once started, the API docs will be accessible at: [http://localhost:8000/docs](http://localhost:8000/docs)
+这会自动启动：
+- PostgreSQL + Redis（Docker）
+- FastAPI 后端 → http://localhost:8000
+- arq 后台 Worker（定时抓取）
+- Vite 前端 → http://localhost:5173
 
-### 5. Run the Background Worker
-In a separate terminal (with the virtual environment activated), start the background worker:
+### 4. 初始化种子数据（可选）
+
 ```bash
-python main.py worker
-# Or run directly via arq:
-# arq src.tasks.worker.WorkerSettings
+uv run python scripts/seed_feeds.py
+```
+
+导入预配置的 AI/科技类 RSS 源（OpenAI、Anthropic、Google AI、TechCrunch AI 等）。
+
+---
+
+## 📁 项目结构
+
+```
+ai-rss/
+├── dev.sh                    # 一键启动脚本
+├── docker-compose.yml        # PostgreSQL + Redis
+├── pyproject.toml            # Python 依赖
+│
+├── src/
+│   ├── main.py               # FastAPI 应用入口
+│   ├── config.py             # 配置（从 .env 加载）
+│   ├── api/endpoints/        # REST 端点
+│   │   ├── auth.py           # 注册 / 登录 / JWT
+│   │   ├── feeds.py          # 订阅源 CRUD
+│   │   ├── items.py          # 文章列表 / 已读 / 收藏 / 摘要
+│   │   ├── agents.py         # AI 抓取 / 可视化选取预览
+│   │   └── chat.py           # RAG 对话
+│   ├── models/               # SQLModel 数据模型
+│   ├── services/
+│   │   ├── ai_processor.py   # LLM 统一调用（摘要 / 过滤 / 翻译）
+│   │   ├── ai_agent.py       # AI 网页爬取 Agent
+│   │   ├── feed_parser.py    # RSS/Atom 解析
+│   │   └── scraper.py        # HTML 抓取 & CSS 选择器解析
+│   └── tasks/
+│       └── worker.py         # arq 后台任务（定时抓取 / AI 富化）
+│
+├── frontend/
+│   └── src/
+│       ├── pages/            # 页面（Dashboard / Feeds / Reader / UrlAnalyzer…）
+│       ├── components/       # 共用组件
+│       ├── api/client.ts     # Axios API 客户端
+│       ├── store/            # Zustand 状态
+│       └── types/index.ts    # TypeScript 类型定义
+│
+└── scripts/
+    ├── seed_feeds.py         # 导入预置订阅源
+    └── sync_feeds.py         # 手动触发同步
 ```
 
 ---
 
-## 🛠️ Testing & Development
+## 🔌 API 文档
 
-We use `pytest` for testing. Run tests with:
-```bash
-pytest
-```
+启动后访问 http://localhost:8000/docs 查看自动生成的 Swagger UI。
+
+主要端点：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/auth/register` | 注册 |
+| `POST` | `/api/auth/token` | 登录（返回 JWT） |
+| `GET` | `/api/feeds/` | 获取所有订阅源 |
+| `POST` | `/api/feeds/` | 添加订阅源（标准 RSS 或 AI 抓取型） |
+| `PATCH` | `/api/feeds/{id}` | 更新抓取间隔等设置 |
+| `GET` | `/api/items/` | 获取订阅文章（含已读 / 收藏状态） |
+| `POST` | `/api/items/{id}/summarize` | AI 生成文章摘要 |
+| `POST` | `/api/agents/fetch-preview` | 可视化抓取 — 获取净化 HTML |
+| `POST` | `/api/agents/preview-selector` | CSS 选择器预览提取结果 |
+
+---
+
+## 📄 License
+
+MIT

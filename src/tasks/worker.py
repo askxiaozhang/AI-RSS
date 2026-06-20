@@ -1,8 +1,9 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from sqlmodel import select
+from arq import cron
 from arq.connections import RedisSettings
 from src.config import settings
 from src.core.database import async_session_maker
@@ -11,6 +12,21 @@ from src.models.item import FeedItem, ItemState
 from src.services.feed_parser import feed_parser_service
 from src.services.ai_agent import ai_agent_crawler
 from src.services.ai_processor import ai_processor
+
+
+def _parse_date(value) -> datetime | None:
+    """Coerce published_at to a datetime; handles str ISO dates from AI-crawled feeds."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)  # strip tz for naive DB column
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return dt.replace(tzinfo=None)
+        except ValueError:
+            pass
+    return datetime.utcnow()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,9 +46,9 @@ async def process_feed_item(db_session, item_data: dict, feed_id: UUID):
         feed_id=feed_id,
         title=item_data["title"],
         link=item_data["link"],
-        raw_content=item_data["description"],
+        raw_content=item_data.get("description"),
         author=item_data.get("author"),
-        published_at=item_data.get("published_at")
+        published_at=_parse_date(item_data.get("published_at")),
     )
     
     # 3. AI Enrichment (Summarization)
@@ -96,17 +112,41 @@ async def fetch_feed_job(ctx, feed_id_str: str):
             
         logger.info(f"Fetched {len(items)} items for feed {feed.title}")
         
-        # Process each item
+        # Process each item sequentially; rollback and continue on per-item errors
         for item in items:
             try:
                 await process_feed_item(session, item, feed.id)
             except Exception as e:
                 logger.error(f"Error processing item {item.get('link')}: {e}")
+                await session.rollback()
                 
         # Update feed fetch status
         feed.last_fetched_at = datetime.utcnow()
         session.add(feed)
         await session.commit()
+
+async def schedule_due_feeds(ctx):
+    """Cron job: enqueue fetch_feed_job for every feed whose refresh interval has elapsed."""
+    now = datetime.utcnow()
+    async with async_session_maker() as session:
+        result = await session.execute(select(Feed))
+        feeds = result.scalars().all()
+
+    due = [
+        f for f in feeds
+        if f.last_fetched_at is None
+        or (now - f.last_fetched_at) >= timedelta(seconds=f.refresh_interval)
+    ]
+
+    if not due:
+        logger.info("schedule_due_feeds: no feeds due for refresh")
+        return
+
+    redis = ctx["redis"]
+    for feed in due:
+        await redis.enqueue_job("fetch_feed_job", str(feed.id))
+        logger.info(f"Scheduled refresh for feed: {feed.title} (interval={feed.refresh_interval}s)")
+
 
 async def startup(ctx):
     logger.info("Background Worker starting up...")
@@ -117,6 +157,11 @@ async def shutdown(ctx):
 class WorkerSettings:
     """arq worker configuration settings."""
     functions = [fetch_feed_job]
+    cron_jobs = [
+        # Check every 30 minutes which feeds are due and enqueue them
+        cron(schedule_due_feeds, minute={0, 30}),
+    ]
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+    job_timeout = 600  # 10 minutes per job (AI summarization of many articles is slow)
