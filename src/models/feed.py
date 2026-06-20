@@ -8,7 +8,7 @@ class FeedBase(SQLModel):
     url: str
     feed_type: str = "standard"  # "standard" or "agent_crawled"
     crawl_instructions: Optional[str] = None
-    refresh_interval: int = 3600  # in seconds (default 1 hour)
+    refresh_interval: int = 21600  # in seconds (default 6 hours)
 
 class Feed(FeedBase, table=True):
     __tablename__ = "feeds"

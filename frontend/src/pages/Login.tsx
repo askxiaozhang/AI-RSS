@@ -122,6 +122,32 @@ export default function Login() {
             </button>
           </form>
 
+          {/* 后门快速登录 */}
+          <div className="mt-4">
+            <button
+              onClick={async () => {
+                try {
+                  const { data } = await authApi.backdoor()
+                  setAuth(data.access_token, {
+                    id: 'backdoor',
+                    email: 'admin@ai-rss.com',
+                    preferred_language: 'zh',
+                    created_at: new Date().toISOString(),
+                  })
+                  navigate('/')
+                } catch (err: any) {
+                  setError('快速登录失败')
+                }
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100"
+            >
+              <span> 快速登录（开发模式）</span>
+            </button>
+            <p className="mt-2 text-center text-[11px] text-slate-400">
+              使用固定账号 admin@ai-rss.com 直接登录
+            </p>
+          </div>
+
           <p className="mt-6 text-center text-sm text-slate-500">
             还没有账号？{' '}
             <Link to="/register" className="font-medium text-brand-600 hover:text-brand-700">

@@ -62,13 +62,46 @@ async def login_for_access_token(
     stmt = select(User).where(User.email == form_data.username)
     result = await session.execute(stmt)
     user = result.scalars().first()
-    
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
+
+    access_token = create_access_token(data={"sub": user.email})
+    return Token(access_token=access_token)
+
+# ========== 后门登录（开发用） ==========
+BACKDOOR_EMAIL = "admin@ai-rss.com"
+BACKDOOR_PASSWORD = "admin123"
+
+@router.post("/backdoor", response_model=Token)
+async def backdoor_login(
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    后门登录 - 开发/测试用
+    直接使用固定账号密码登录，无需注册
+    邮箱：admin@ai-rss.com
+    密码：admin123
+    """
+    # 查找或创建后门用户
+    stmt = select(User).where(User.email == BACKDOOR_EMAIL)
+    result = await session.execute(stmt)
+    user = result.scalars().first()
+
+    if not user:
+        # 自动创建后门用户
+        user = User(
+            email=BACKDOOR_EMAIL,
+            hashed_password=get_password_hash(BACKDOOR_PASSWORD),
+            preferred_language="zh"
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+
     access_token = create_access_token(data={"sub": user.email})
     return Token(access_token=access_token)

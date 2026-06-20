@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 from arq import create_pool
 from arq.connections import RedisSettings
 
@@ -84,6 +85,53 @@ async def list_subscriptions(
     stmt = select(UserSubscription).where(UserSubscription.user_id == current_user.id)
     result = await session.execute(stmt)
     return result.scalars().all()
+
+@router.get("/", response_model=List[FeedRead])
+async def list_feeds(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Lists all feeds in the system."""
+    stmt = select(Feed)
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+VALID_INTERVALS = {3600, 10800, 21600, 43200, 86400, 259200, 604800}
+
+class FeedUpdate(BaseModel):
+    refresh_interval: Optional[int] = None
+    title: Optional[str] = None
+
+
+@router.patch("/{feed_id}", response_model=FeedRead)
+async def update_feed(
+    feed_id: str,
+    update: FeedUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Updates mutable feed settings (refresh_interval, title)."""
+    from uuid import UUID
+    feed = await session.get(Feed, UUID(feed_id))
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
+
+    if update.refresh_interval is not None:
+        if update.refresh_interval not in VALID_INTERVALS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"refresh_interval must be one of {sorted(VALID_INTERVALS)} seconds",
+            )
+        feed.refresh_interval = update.refresh_interval
+
+    if update.title is not None:
+        feed.title = update.title
+
+    session.add(feed)
+    await session.commit()
+    await session.refresh(feed)
+    return feed
+
 
 @router.put("/subscriptions/{sub_id}", response_model=UserSubscriptionRead)
 async def update_subscription(

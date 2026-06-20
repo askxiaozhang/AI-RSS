@@ -1,3 +1,6 @@
+from urllib.parse import urljoin
+
+from bs4 import BeautifulSoup
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -9,6 +12,126 @@ from src.services.scraper import scraper_service
 from src.services.ai_processor import ai_processor
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+
+# ---------------------------------------------------------------------------
+# Interactive crawl builder helpers
+# ---------------------------------------------------------------------------
+
+class FetchPreviewRequest(BaseModel):
+    url: str
+
+class FetchPreviewResponse(BaseModel):
+    title: str
+    html: str  # sanitised <body> HTML, safe to render client-side
+
+
+@router.post("/fetch-preview", response_model=FetchPreviewResponse)
+async def fetch_preview(
+    payload: FetchPreviewRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch a page and return sanitised HTML for the interactive selector UI.
+
+    Returns a complete <head>…<body>… string so the iframe renders with full
+    CSS.  Only executable content (script/noscript/iframe/form) is stripped.
+    Link hrefs are preserved so browse-mode navigation works client-side.
+    """
+    raw = await scraper_service.fetch_html(payload.url)
+    if not raw:
+        raise HTTPException(status_code=400, detail="无法访问该网页，请检查地址是否正确")
+
+    soup = BeautifulSoup(raw, "html.parser")
+
+    title_tag = soup.find("title")
+    title = title_tag.get_text(strip=True) if title_tag else payload.url
+
+    # Strip only executable / embedding elements — keep <style> and CSS links
+    for tag in soup(["script", "noscript", "iframe", "form",
+                     "canvas", "object", "embed"]):
+        tag.decompose()
+
+    # Remove on* event attributes everywhere; keep href (browse-mode needs it)
+    for tag in soup.find_all(True):
+        for attr in list(tag.attrs.keys()):
+            if attr.lower().startswith("on"):
+                del tag.attrs[attr]
+
+    # Rewrite relative URLs to absolute (images, stylesheets, etc.)
+    for tag, attr in [("img", "src"), ("link", "href"), ("source", "src"),
+                      ("video", "poster"), ("input", "src")]:
+        for el in soup.find_all(tag):
+            val = el.get(attr, "")
+            if val and not val.startswith(("http", "data:", "//", "#", "mailto:")):
+                el[attr] = urljoin(payload.url, val)
+            elif val.startswith("//"):
+                el[attr] = "https:" + val
+
+    # Inject <base href> into <head> so all remaining relative refs resolve
+    head = soup.find("head")
+    if not head:
+        head = soup.new_tag("head")
+        soup.insert(0, head)
+    base = soup.new_tag("base", href=payload.url)
+    head.insert(0, base)
+
+    body = soup.find("body") or soup
+    # Return head + body so the iframe gets proper stylesheets
+    return FetchPreviewResponse(title=title, html=str(head) + str(body))
+
+
+class PreviewSelectorRequest(BaseModel):
+    url: str
+    selector: str  # CSS selector for the repeating article container
+
+class PreviewSelectorItem(BaseModel):
+    title: str
+    link: str
+    description: str
+
+class PreviewSelectorResponse(BaseModel):
+    count: int
+    items: List[PreviewSelectorItem]
+
+
+@router.post("/preview-selector", response_model=PreviewSelectorResponse)
+async def preview_selector(
+    payload: PreviewSelectorRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Apply a CSS selector to a URL and return a preview of the matched items."""
+    raw = await scraper_service.fetch_html(payload.url)
+    if not raw:
+        raise HTTPException(status_code=400, detail="无法访问该网页")
+
+    soup = BeautifulSoup(raw, "html.parser")
+    try:
+        containers = soup.select(payload.selector)
+    except Exception:
+        raise HTTPException(status_code=422, detail=f"无效的 CSS 选择器：{payload.selector}")
+
+    items: List[PreviewSelectorItem] = []
+    for c in containers[:20]:
+        # Title: prefer heading > element text
+        title_el = c.find(["h1", "h2", "h3", "h4", "h5", "h6"])
+        title = (title_el.get_text(strip=True) if title_el else c.get_text(strip=True))[:200]
+
+        # Link: container itself may be <a>, otherwise find nested anchor
+        if c.name == "a":
+            href = c.get("href", "")
+        else:
+            a = c.find("a")
+            href = a.get("href", "") if a else ""
+        link = urljoin(payload.url, href) if href else ""
+
+        # Description: first <p>
+        p = c.find("p")
+        desc = p.get_text(strip=True)[:300] if p else ""
+
+        if title or link:
+            items.append(PreviewSelectorItem(title=title, link=link, description=desc))
+
+    return PreviewSelectorResponse(count=len(items), items=items)
 
 class AgentTestRequest(BaseModel):
     url: str

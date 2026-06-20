@@ -33,6 +33,8 @@ export interface FeedItem {
   ai_tldr?: string
   ai_summary?: string
   ai_translation?: string
+  read_status?: boolean
+  starred_status?: boolean
 }
 
 export interface Subscription {
@@ -63,4 +65,10 @@ export interface ChatMessage {
 export interface AgentTestResult {
   items_count: number
   items: Array<Record<string, any>>
+}
+
+export interface SummarizeResult {
+  tldr: string
+  highlights: string[]
+  summary: string
 }
