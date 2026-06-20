@@ -30,9 +30,19 @@ app.add_middleware(
 # Include main API router
 app.include_router(api_router, prefix="/api")
 
-@app.get("/")
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Mount static files directory
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {
-        "message": f"Welcome to the {settings.PROJECT_NAME} API!",
-        "docs_url": "/docs"
-    }
+    index_file = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_file):
+        with open(index_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>AI-RSS Web App</h1><p>Please place index.html in the src/static folder.</p>")

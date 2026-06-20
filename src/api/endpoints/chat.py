@@ -98,27 +98,10 @@ async def send_chat_message(
     """
     
     assistant_content = "I could not access the AI models at this moment. Please check your API keys."
-    
-    if ai_processor.gemini_client:
-        try:
-            response = ai_processor.gemini_client.models.generate_content(
-                model=settings.DEFAULT_LLM_MODEL,
-                contents=llm_prompt,
-            )
-            assistant_content = response.text.strip()
-        except Exception:
-            pass
-    elif ai_processor.openai_client:
-        try:
-            response = await ai_processor.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "user", "content": llm_prompt}
-                ]
-            )
-            assistant_content = response.choices[0].message.content.strip()
-        except Exception:
-            pass
+
+    llm_response = await ai_processor._call_llm(llm_prompt)
+    if llm_response:
+        assistant_content = llm_response
             
     # 4. Save assistant response
     assistant_msg = ChatMessage(

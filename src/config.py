@@ -19,7 +19,12 @@ class Settings(BaseSettings):
     # AI API Keys
     GEMINI_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
-    
+    ANTHROPIC_API_KEY: str | None = None
+
+    # Anthropic-compatible third-party endpoint (e.g. Dashscope)
+    ANTHROPIC_BASE_URL: str = "https://coding.dashscope.aliyuncs.com/apps/anthropic"
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-5"
+
     # LLM Settings
     DEFAULT_LLM_MODEL: str = "gemini-2.5-flash"  # Default Gemini model
     DEFAULT_EMBEDDING_MODEL: str = "text-embedding-004"
