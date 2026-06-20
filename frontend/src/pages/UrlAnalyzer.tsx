@@ -231,11 +231,12 @@ export default function UrlAnalyzer() {
     const container = screenshotRef.current
     if (!container) return
 
+    // container is now sized exactly to the rendered image (w-full, h-auto)
+    // so a single uniform scale factor converts click coords to Playwright coords.
     const rect = container.getBoundingClientRect()
-    const scaleX = screenshot.width / rect.width
-    const scaleY = screenshot.height / rect.height
-    const x = Math.round((e.clientX - rect.left) * scaleX)
-    const y = Math.round((e.clientY - rect.top) * scaleY)
+    const scale = screenshot.width / rect.width   // same ratio for x and y
+    const x = Math.round((e.clientX - rect.left) * scale)
+    const y = Math.round((e.clientY - rect.top)  * scale)
 
     setLoadingClick(true)
     try {
@@ -564,37 +565,45 @@ export default function UrlAnalyzer() {
 
           {/* ── Browser screenshot ── */}
           {renderMode === 'browser' && screenshot && (
-            <div className="relative flex-1 overflow-hidden">
-              {/* Scroll buttons */}
-              <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5">
-                <button onClick={() => handleScroll(-1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md text-slate-600 hover:bg-slate-50 hover:shadow-lg">
-                  <ChevronUp className="h-4 w-4" />
-                </button>
-                <button onClick={() => handleScroll(1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md text-slate-600 hover:bg-slate-50 hover:shadow-lg">
-                  <ChevronDownIcon className="h-4 w-4" />
-                </button>
+            // Outer div scrolls vertically so we never crop the image
+            <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-100">
+              {/* Scroll-to-load buttons (Playwright page scroll, not just visual scroll) */}
+              <div className="sticky top-2 right-0 z-10 flex justify-end pr-3 pointer-events-none">
+                <div className="pointer-events-auto flex flex-col gap-1.5">
+                  <button onClick={() => handleScroll(-1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md text-slate-600 hover:bg-slate-50 hover:shadow-lg">
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleScroll(1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md text-slate-600 hover:bg-slate-50 hover:shadow-lg">
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
-              {/* Screenshot with highlight overlays */}
+              {/*
+                Key fix: image fills full width with natural (auto) height.
+                The inner div becomes exactly the same size as the rendered image,
+                so the SVG overlay coordinate system matches 1:1.
+                (No object-contain letterboxing = no coordinate mismatch.)
+              */}
               <div
                 ref={screenshotRef}
                 onClick={handleScreenshotClick}
-                className={`relative h-full w-full overflow-hidden ${mode === 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
+                className={`relative w-full ${mode === 'select' ? 'cursor-crosshair' : 'cursor-default'}`}
               >
                 <img
                   src={`data:image/jpeg;base64,${screenshot.screenshot}`}
                   alt="Browser preview"
-                  className="h-full w-full object-contain object-top"
+                  className="block w-full"
                   draggable={false}
                 />
-                {/* Highlight rects */}
-                {browserHighlights.length > 0 && screenshotRef.current && (
+                {/* SVG overlay — same dimensions as the img, so viewBox maps perfectly */}
+                {browserHighlights.length > 0 && (
                   <svg
-                    className="pointer-events-none absolute inset-0"
+                    className="pointer-events-none absolute inset-0 w-full h-full"
                     viewBox={`0 0 ${screenshot.width} ${screenshot.height}`}
-                    style={{ width: '100%', height: '100%' }}
+                    preserveAspectRatio="none"
                   >
                     {browserHighlights.map((r, i) => (
                       <rect key={i} x={r.x} y={r.y} width={r.width} height={r.height}
