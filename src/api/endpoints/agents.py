@@ -23,7 +23,8 @@ class FetchPreviewRequest(BaseModel):
 
 class FetchPreviewResponse(BaseModel):
     title: str
-    html: str  # sanitised <body> HTML, safe to render client-side
+    html: str          # sanitised head+body HTML, empty string when requires_js=True
+    requires_js: bool  # True when the page is a JS SPA with no server-rendered content
 
 
 @router.post("/fetch-preview", response_model=FetchPreviewResponse)
@@ -36,6 +37,10 @@ async def fetch_preview(
     Returns a complete <head>…<body>… string so the iframe renders with full
     CSS.  Only executable content (script/noscript/iframe/form) is stripped.
     Link hrefs are preserved so browse-mode navigation works client-side.
+
+    When the page is a JavaScript SPA (server-rendered HTML has <300 chars of
+    visible text after sanitisation), sets requires_js=True and html="" so the
+    frontend can show a fallback UI instead of a blank iframe.
     """
     raw = await scraper_service.fetch_html(payload.url)
     if not raw:
@@ -57,6 +62,11 @@ async def fetch_preview(
             if attr.lower().startswith("on"):
                 del tag.attrs[attr]
 
+    # Detect JS-only SPA: if visible body text is < 300 chars the page needs JS
+    body_text = (soup.body or soup).get_text(separator=" ", strip=True)
+    if len(body_text) < 300:
+        return FetchPreviewResponse(title=title, html="", requires_js=True)
+
     # Rewrite relative URLs to absolute (images, stylesheets, etc.)
     for tag, attr in [("img", "src"), ("link", "href"), ("source", "src"),
                       ("video", "poster"), ("input", "src")]:
@@ -76,8 +86,105 @@ async def fetch_preview(
     head.insert(0, base)
 
     body = soup.find("body") or soup
-    # Return head + body so the iframe gets proper stylesheets
-    return FetchPreviewResponse(title=title, html=str(head) + str(body))
+    return FetchPreviewResponse(title=title, html=str(head) + str(body), requires_js=False)
+
+
+# ---------------------------------------------------------------------------
+# Browser-based rendering (Playwright) — works for JS SPAs
+# ---------------------------------------------------------------------------
+
+class BrowserRenderRequest(BaseModel):
+    url: str
+    session_id: str
+
+class BrowserClickRequest(BaseModel):
+    session_id: str
+    x: int
+    y: int
+
+class BrowserNavigateRequest(BaseModel):
+    session_id: str
+    url: str
+
+class BrowserScrollRequest(BaseModel):
+    session_id: str
+    delta_y: int
+
+class BrowserPreviewSelectorRequest(BaseModel):
+    session_id: str
+    selector: str
+
+
+@router.post("/browser/preview-selector")
+async def browser_preview_selector(
+    payload: BrowserPreviewSelectorRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Run querySelectorAll in the live browser session — works for JS-rendered pages."""
+    from src.services.browser_service import browser_service
+    session_id = f"{current_user.id}:{payload.session_id}"
+    result = await browser_service.preview_selector(session_id, payload.selector)
+    if "error" in result and result.get("count", 0) == 0:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+@router.post("/browser/render")
+async def browser_render(
+    payload: BrowserRenderRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Launch/reuse a real Chromium browser session, navigate to URL, return screenshot."""
+    from src.services.browser_service import browser_service
+    session_id = f"{current_user.id}:{payload.session_id}"
+    try:
+        result = await browser_service.render(payload.url, session_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Browser render failed: {e}")
+
+
+@router.post("/browser/click")
+async def browser_click(
+    payload: BrowserClickRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Find the element at viewport (x,y) in the live page, return selector + highlights."""
+    from src.services.browser_service import browser_service
+    session_id = f"{current_user.id}:{payload.session_id}"
+    result = await browser_service.click_and_get_selector(session_id, payload.x, payload.y)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+@router.post("/browser/navigate")
+async def browser_navigate(
+    payload: BrowserNavigateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Navigate the existing browser session to a new URL, return fresh screenshot."""
+    from src.services.browser_service import browser_service
+    session_id = f"{current_user.id}:{payload.session_id}"
+    try:
+        result = await browser_service.navigate(session_id, payload.url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Navigation failed: {e}")
+
+
+@router.post("/browser/scroll")
+async def browser_scroll(
+    payload: BrowserScrollRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Scroll the page and return an updated screenshot."""
+    from src.services.browser_service import browser_service
+    session_id = f"{current_user.id}:{payload.session_id}"
+    result = await browser_service.scroll(session_id, payload.delta_y)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 class PreviewSelectorRequest(BaseModel):
