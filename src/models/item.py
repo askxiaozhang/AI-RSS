@@ -13,22 +13,19 @@ class FeedItemBase(SQLModel):
 
 class FeedItem(FeedItemBase, table=True):
     __tablename__ = "feed_items"
-    
+
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # AI enrichment columns
     ai_tldr: Optional[str] = None
     ai_summary: Optional[str] = None
     ai_translation: Optional[str] = None
-    
-    # We will represent vector field manually in SQLModel, or as a JSON string,
-    # or handle the pgvector type mapping in SQLAlchemy.
-    # To keep it simple, we define it as Optional[str] containing vector JSON,
-    # or rely on direct DB query mapping for pgvector. We'll store it as list of floats
-    # or handle it through SQLAlchemy. Since pgvector requires `vector` type in PG,
-    # we can define it using SA Column.
-    # We'll use a standard list[float] or a utility in raw SQL queries.
+
+    # AI importance & categorisation (added via ALTER TABLE on startup)
+    importance_score: Optional[float] = None  # 1.0–10.0
+    keywords: Optional[str] = None            # JSON array, e.g. '["AI","产品发布","OpenAI"]'
+
 
 class FeedItemRead(FeedItemBase):
     id: UUID
@@ -36,6 +33,8 @@ class FeedItemRead(FeedItemBase):
     ai_tldr: Optional[str]
     ai_summary: Optional[str]
     ai_translation: Optional[str]
+    importance_score: Optional[float]
+    keywords: Optional[str]
 
 # ItemState records if a specific user has read or starred a specific item
 class ItemState(SQLModel, table=True):

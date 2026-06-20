@@ -6,12 +6,13 @@
 
 **把任意网站变成 AI 驱动的 RSS 订阅源**
 
-将 AI 能力融入传统 RSS 阅读，无论是手动添加 Feed 链接、还是用可视化交互选取任意网页元素生成自定义订阅，都能获得 AI 自动摘要、语义过滤和多语言翻译。
+将 AI 能力融入传统 RSS 阅读，无论是手动添加 Feed 链接、还是用可视化交互选取任意网页元素生成自定义订阅，都能获得 AI 自动摘要、重要性评分、关键词标签、语义过滤和多语言翻译。
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue?logo=python)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
+[![Playwright](https://img.shields.io/badge/Playwright-1.60-orange?logo=playwright)](https://playwright.dev)
 
 </div>
 
@@ -22,41 +23,51 @@
 | 功能 | 说明 |
 |------|------|
 | **标准 RSS 订阅** | 支持 RSS / Atom / JSON Feed，自动抓取并同步 |
-| **可视化 AI 抓取** | 打开任意网页，浏览模式/选取模式切换，点击文章卡片即可生成自定义 Feed |
+| **可视化 AI 抓取** | 打开任意网页，**浏览/选择**两种模式切换，点击文章卡片即可生成自定义 Feed |
+| **真实浏览器渲染** | 集成 Playwright Chromium，支持 B站、抖音等 JS 渲染 SPA，自动检测并切换 |
 | **AI 摘要 & TL;DR** | 每篇文章自动生成一句话总结、三条要点、150 字概览 |
+| **重要性评分** | AI 对每篇文章打 1–10 分，颜色区分（极高/重要/一般/较低）|
+| **关键词标签** | AI 自动提取领域、类型、主体实体等 3–5 个标签 |
 | **语义智能过滤** | 用自然语言描述过滤规则，AI 帮你筛掉不感兴趣的内容 |
-| **多语言翻译** | 自动将外语文章翻译为用户首选语言 |
-| **自定义抓取间隔** | 每个订阅源可独立设置刷新频率（1小时～1周） |
+| **自定义抓取间隔** | 每个订阅源可独立设置刷新频率（1 小时～1 周），Worker 定时调度 |
+| **阅读状态追踪** | 已读 / 未读 / 收藏，多维度筛选与搜索，支持全部标为已读 |
 | **对话助手** | 基于 RAG 与订阅内容对话问答 |
-| **阅读状态追踪** | 已读 / 未读 / 收藏，多维度筛选与搜索 |
 
 ---
 
 ## 📸 界面预览
 
 ### 智能阅读器
-> 左侧栏：全部 / 未读 / 收藏 视图切换 + 时间范围 + 订阅源过滤（含未读计数）  
-> 文章列表：AI TL;DR 摘要一行展示，支持展开全文、一键 AI 解析、收藏标记
+> 每篇文章显示 AI TL;DR 摘要、**重要性评分徽章**（1–10 分色标）、**关键词标签**  
+> 左侧栏：全部 / 未读 / 收藏视图 + 时间范围筛选 + 订阅源过滤（含未读计数）
 
 <img src="docs/screenshots/reader.png" alt="Reader View" width="800" />
 
 ---
 
-### 订阅源管理
-> 卡片式展示所有订阅，显示类型标签（RSS / AI 抓取）、文件夹分类、最后抓取时间  
-> 每张卡片可直接修改抓取间隔，未订阅的系统源一键订阅
+### 可视化 AI 抓取 — 真实浏览器模式（支持 JS SPA）
+> 输入 B站、抖音等单页应用链接后自动切换为 Playwright 渲染模式  
+> 截图显示完整渲染后的页面，切换到「选择」模式后点击任意元素即可识别同类区块  
+> SVG 高亮框坐标与点击位置精准对齐
 
-<img src="docs/screenshots/feeds.png" alt="Feeds Management" width="800" />
+<img src="docs/screenshots/analyze_browser_mode.png" alt="Browser Mode - Bilibili" width="800" />
 
 ---
 
-### AI 可视化抓取
-> 输入任意网址后进入双模式交互界面：  
-> **浏览模式** — 像普通浏览器一样点击链接跳转，找到文章列表页  
-> **选择模式** — 点击文章卡片，AI 自动识别同类重复元素并预览提取结果  
-> 确认后一键订阅，无需手写 CSS 选择器
+### 可视化 AI 抓取 — 静态预览模式（普通网站）
+> 常规 SSR/静态网站走静态 fetch 模式，速度更快  
+> 浏览模式可正常点击链接跳转，选择模式点击高亮选取  
+> 两种模式一键切换，自动检测
 
 <img src="docs/screenshots/analyze.png" alt="AI URL Analyzer" width="800" />
+
+---
+
+### 订阅源管理
+> 卡片式展示所有订阅，显示类型标签（RSS / AI 抓取）、文件夹分类、最后抓取时间  
+> 每张卡片可**直接修改抓取间隔**，未订阅的系统源一键订阅
+
+<img src="docs/screenshots/feeds.png" alt="Feeds Management" width="800" />
 
 ---
 
@@ -78,12 +89,18 @@
 │ SQLModel │   │  arq    │   │ Anthropic / OpenAI   │
 │ pgvector │   │ worker  │   │ Gemini / Dashscope   │
 └──────────┘   └─────────┘   └─────────────────────┘
+                                       ↑
+                              ┌────────┴────────┐
+                              │   Playwright     │
+                              │ Chromium (SPA)   │
+                              └─────────────────┘
 ```
 
 **后端**
 - [FastAPI](https://fastapi.tiangolo.com) — 异步 REST API
 - [SQLModel](https://sqlmodel.tiangolo.com) — ORM（基于 SQLAlchemy + Pydantic）
 - [arq](https://arq-docs.helpmanual.io) — Redis 异步任务队列，定时抓取 Feed
+- [Playwright](https://playwright.dev/python/) — 真实 Chromium 渲染，支持 JS SPA
 - [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) — HTML 解析与元素选取
 - [feedparser](https://feedparser.readthedocs.io) — RSS/Atom 解析
 
@@ -97,6 +114,7 @@
 **AI**
 - 统一 LLM 调用层，按优先级依次尝试：Gemini → Anthropic → OpenAI
 - 支持 Anthropic-compatible 第三方接口（如阿里云灵积 Dashscope）
+- Semaphore 限流防 429，ThinkingBlock 兼容处理
 
 ---
 
@@ -114,8 +132,9 @@
 ```bash
 git clone <repo-url> && cd ai-rss
 
-# Python 依赖
+# Python 依赖（含 Playwright）
 uv sync
+uv run playwright install chromium
 
 # 前端依赖
 cd frontend && npm install && cd ..
@@ -179,13 +198,14 @@ ai-rss/
 │   ├── config.py             # 配置（从 .env 加载）
 │   ├── api/endpoints/        # REST 端点
 │   │   ├── auth.py           # 注册 / 登录 / JWT
-│   │   ├── feeds.py          # 订阅源 CRUD
-│   │   ├── items.py          # 文章列表 / 已读 / 收藏 / 摘要
-│   │   ├── agents.py         # AI 抓取 / 可视化选取预览
+│   │   ├── feeds.py          # 订阅源 CRUD + 自定义抓取间隔
+│   │   ├── items.py          # 文章列表 / 已读 / 收藏 / AI 摘要
+│   │   ├── agents.py         # AI 抓取 / 浏览器渲染 / 选择器预览
 │   │   └── chat.py           # RAG 对话
 │   ├── models/               # SQLModel 数据模型
 │   ├── services/
-│   │   ├── ai_processor.py   # LLM 统一调用（摘要 / 过滤 / 翻译）
+│   │   ├── ai_processor.py   # LLM 调用（摘要 / 评分 / 关键词 / 过滤 / 翻译）
+│   │   ├── browser_service.py # Playwright session 池（真实浏览器渲染）
 │   │   ├── ai_agent.py       # AI 网页爬取 Agent
 │   │   ├── feed_parser.py    # RSS/Atom 解析
 │   │   └── scraper.py        # HTML 抓取 & CSS 选择器解析
@@ -195,7 +215,7 @@ ai-rss/
 ├── frontend/
 │   └── src/
 │       ├── pages/            # 页面（Dashboard / Feeds / Reader / UrlAnalyzer…）
-│       ├── components/       # 共用组件
+│       ├── components/       # 共用组件（ReaderCard 含评分 & 关键词）
 │       ├── api/client.ts     # Axios API 客户端
 │       ├── store/            # Zustand 状态
 │       └── types/index.ts    # TypeScript 类型定义
@@ -220,10 +240,12 @@ ai-rss/
 | `GET` | `/api/feeds/` | 获取所有订阅源 |
 | `POST` | `/api/feeds/` | 添加订阅源（标准 RSS 或 AI 抓取型） |
 | `PATCH` | `/api/feeds/{id}` | 更新抓取间隔等设置 |
-| `GET` | `/api/items/` | 获取订阅文章（含已读 / 收藏状态） |
-| `POST` | `/api/items/{id}/summarize` | AI 生成文章摘要 |
-| `POST` | `/api/agents/fetch-preview` | 可视化抓取 — 获取净化 HTML |
-| `POST` | `/api/agents/preview-selector` | CSS 选择器预览提取结果 |
+| `GET` | `/api/items/` | 获取订阅文章（含已读 / 收藏 / 评分 / 关键词） |
+| `POST` | `/api/items/{id}/summarize` | AI 生成摘要 + 评分 + 关键词 |
+| `POST` | `/api/agents/fetch-preview` | 静态 HTML 预览（普通网站） |
+| `POST` | `/api/agents/browser/render` | Playwright 真实渲染 + 截图 |
+| `POST` | `/api/agents/browser/click` | 坐标 → DOM 元素 → CSS 选择器 + 高亮矩形 |
+| `POST` | `/api/agents/browser/preview-selector` | 在 live DOM 中预览选择器提取结果 |
 
 ---
 

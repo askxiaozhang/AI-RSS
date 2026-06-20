@@ -176,13 +176,11 @@ class AIProcessor:
 
     async def summarize_article(self, title: str, content: str) -> Dict[str, Any]:
         """
-        Generates a summary of the article including:
-        - TL;DR (one sentence)
-        - Highlights (3 key bullet points)
-        - Full Summary (150-word overview)
+        Generates a structured analysis including TL;DR, highlights, summary,
+        an importance score (1–10), and 3–5 keyword tags.
         """
         prompt = f"""
-        Analyze the following article and generate a structured summary in JSON format.
+        Analyze the following article and return a structured JSON response.
 
         Title: {title}
         Content: {content}
@@ -195,24 +193,40 @@ class AIProcessor:
                 "Key takeaway 2",
                 "Key takeaway 3"
             ],
-            "summary": "A concise 150-word summary overview of the article."
+            "summary": "A concise 150-word summary overview of the article.",
+            "importance_score": <float 1.0-10.0>,
+            "keywords": ["keyword1", "keyword2", "keyword3"]
         }}
 
+        Scoring guide for importance_score:
+        - 9-10: Breaking news, major model/product launch, >$100M funding, industry-shifting event
+        - 7-8: Significant update, important research, notable partnership or acquisition
+        - 5-6: Useful article, moderate impact, relevant industry news
+        - 3-4: Minor update, opinion piece, niche interest
+        - 1-2: Low-signal content, repetitive or tangential
+
+        Keyword guide (3-5 tags, mix of):
+        - Domain (领域): e.g. AI、科技、商业、政策、安全、医疗、自动驾驶
+        - Type (类型): e.g. 产品发布、研究论文、融资、合作、监管、开源
+        - Key entity: e.g. OpenAI、Anthropic、Google、Meta
+
+        Prefer Chinese tags for domain/type. Use the original name for entities.
         Return ONLY valid raw JSON.
         """
 
         result = await self._call_llm_json(
             prompt,
-            system_prompt="You are an AI assistant specialized in reading articles and outputting structured JSON summaries.",
+            system_prompt="You are an AI assistant that analyses tech/AI articles and outputs structured JSON.",
         )
         if result:
             return result
 
-        # Fallback mock/simple output if no AI service is configured or all failed
         return {
             "tldr": f"Summarized title: {title}",
             "highlights": ["Content length: " + str(len(content)) + " characters."],
-            "summary": content[:150] + "..." if content else ""
+            "summary": content[:150] + "..." if content else "",
+            "importance_score": None,
+            "keywords": [],
         }
 
     async def filter_article(self, title: str, summary: str, rule: str) -> bool:

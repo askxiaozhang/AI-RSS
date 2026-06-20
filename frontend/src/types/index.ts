@@ -35,6 +35,8 @@ export interface FeedItem {
   ai_translation?: string
   read_status?: boolean
   starred_status?: boolean
+  importance_score?: number | null
+  keywords?: string | null   // raw JSON string from backend
 }
 
 export interface Subscription {
@@ -71,4 +73,6 @@ export interface SummarizeResult {
   tldr: string
   highlights: string[]
   summary: string
+  importance_score?: number | null
+  keywords?: string[]
 }

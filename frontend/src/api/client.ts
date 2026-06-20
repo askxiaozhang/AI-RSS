@@ -90,16 +90,46 @@ export const itemsApi = {
     api.post<SummarizeResult>(`/items/${id}/summarize`),
 }
 
+export interface BrowserRenderResult {
+  title: string
+  screenshot: string   // base64 JPEG
+  width: number
+  height: number
+  current_url: string
+}
+
+export interface BrowserClickResult {
+  selector: string
+  match_count: number
+  highlights: { x: number; y: number; width: number; height: number }[]
+  sample_text: string
+  tag: string
+}
+
 /* ---------- Agents (URL → RSS) ---------- */
 export const agentsApi = {
   testCrawl: (url: string, instructions: string) =>
     api.post<AgentTestResult>('/agents/test-crawl', { url, instructions }),
   fetchPreview: (url: string) =>
-    api.post<{ title: string; html: string }>('/agents/fetch-preview', { url }),
+    api.post<{ title: string; html: string; requires_js: boolean }>('/agents/fetch-preview', { url }),
   previewSelector: (url: string, selector: string) =>
     api.post<{ count: number; items: { title: string; link: string; description: string }[] }>(
       '/agents/preview-selector',
       { url, selector },
+    ),
+  // Browser-based (Playwright) — works for JS SPAs
+  browserRender: (url: string, sessionId: string) =>
+    api.post<BrowserRenderResult>('/agents/browser/render', { url, session_id: sessionId }),
+  browserClick: (sessionId: string, x: number, y: number) =>
+    api.post<BrowserClickResult>('/agents/browser/click', { session_id: sessionId, x, y }),
+  browserNavigate: (sessionId: string, url: string) =>
+    api.post<BrowserRenderResult>('/agents/browser/navigate', { session_id: sessionId, url }),
+  browserScroll: (sessionId: string, deltaY: number) =>
+    api.post<BrowserRenderResult>('/agents/browser/scroll', { session_id: sessionId, delta_y: deltaY }),
+  browserPreviewSelector: (sessionId: string, selector: string) =>
+    api.post<{ count: number; items: { title: string; link: string; description: string }[] }>(
+      '/agents/browser/preview-selector',
+      { session_id: sessionId, selector },
     ),
 }
 

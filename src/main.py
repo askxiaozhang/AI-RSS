@@ -7,9 +7,11 @@ from src.api.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize database tables on startup
     await init_db()
     yield
+    # Cleanly shut down the shared Playwright browser on exit
+    from src.services.browser_service import browser_service
+    await browser_service.close()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

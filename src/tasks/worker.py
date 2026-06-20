@@ -51,11 +51,16 @@ async def process_feed_item(db_session, item_data: dict, feed_id: UUID):
         published_at=_parse_date(item_data.get("published_at")),
     )
     
-    # 3. AI Enrichment (Summarization)
+    # 3. AI Enrichment (Summarization + score + keywords)
     try:
         summary_data = await ai_processor.summarize_article(new_item.title, new_item.raw_content or "")
         new_item.ai_tldr = summary_data.get("tldr")
         new_item.ai_summary = summary_data.get("summary")
+        new_item.importance_score = summary_data.get("importance_score")
+        kw = summary_data.get("keywords")
+        if kw:
+            import json as _json
+            new_item.keywords = _json.dumps(kw, ensure_ascii=False)
     except Exception as e:
         logger.error(f"Enrichment error: {e}")
         

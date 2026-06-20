@@ -32,6 +32,8 @@ class FeedItemWithState(BaseModel):
     ai_tldr: Optional[str] = None
     ai_summary: Optional[str] = None
     ai_translation: Optional[str] = None
+    importance_score: Optional[float] = None
+    keywords: Optional[str] = None           # raw JSON string
     read_status: bool = False
     starred_status: bool = False
 
@@ -100,6 +102,8 @@ async def list_items(
             ai_tldr=fi.ai_tldr,
             ai_summary=fi.ai_summary,
             ai_translation=fi.ai_translation,
+            importance_score=fi.importance_score,
+            keywords=fi.keywords,
             read_status=st.read_status if st else False,
             starred_status=st.starred_status if st else False,
         )
@@ -183,6 +187,8 @@ class SummarizeResponse(BaseModel):
     tldr: str
     highlights: List[str]
     summary: str
+    importance_score: Optional[float] = None
+    keywords: List[str] = []
 
 
 @router.post("/{item_id}/summarize", response_model=SummarizeResponse)
@@ -191,6 +197,7 @@ async def summarize_item(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    import json as _json
     item = await session.get(FeedItem, UUID(item_id))
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -200,11 +207,24 @@ async def summarize_item(
 
     item.ai_tldr = result.get("tldr", item.ai_tldr)
     item.ai_summary = result.get("summary", item.ai_summary)
+    item.importance_score = result.get("importance_score", item.importance_score)
+    kw = result.get("keywords")
+    if kw:
+        item.keywords = _json.dumps(kw, ensure_ascii=False)
     session.add(item)
     await session.commit()
+
+    keywords_list: List[str] = []
+    if item.keywords:
+        try:
+            keywords_list = _json.loads(item.keywords)
+        except Exception:
+            pass
 
     return SummarizeResponse(
         tldr=result.get("tldr", ""),
         highlights=result.get("highlights", []),
         summary=result.get("summary", ""),
+        importance_score=item.importance_score,
+        keywords=keywords_list,
     )
