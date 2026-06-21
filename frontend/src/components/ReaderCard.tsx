@@ -110,7 +110,11 @@ export default function ReaderCard({
     setSummarizing(true)
     setSummaryError(false)
     try {
-      const { data } = await itemsApi.summarize(item.id)
+      const customPrompt =
+        localStorage.getItem(`ai_prompt_feed_${item.feed_id}`) ||
+        localStorage.getItem('ai_prompt_global') ||
+        undefined
+      const { data } = await itemsApi.summarize(item.id, customPrompt)
       setSummaryResult(data)
       setExpanded(true)
     } catch {

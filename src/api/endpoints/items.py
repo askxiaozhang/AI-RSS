@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlmodel import select, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy import outerjoin
@@ -191,9 +191,14 @@ class SummarizeResponse(BaseModel):
     keywords: List[str] = []
 
 
+class SummarizeRequest(BaseModel):
+    custom_prompt: Optional[str] = None
+
+
 @router.post("/{item_id}/summarize", response_model=SummarizeResponse)
 async def summarize_item(
     item_id: str,
+    body: SummarizeRequest = Body(default=SummarizeRequest()),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -203,7 +208,7 @@ async def summarize_item(
         raise HTTPException(status_code=404, detail="Item not found")
 
     content = item.raw_content or item.ai_summary or item.ai_tldr or ""
-    result = await ai_processor.summarize_article(item.title, content)
+    result = await ai_processor.summarize_article(item.title, content, custom_prompt=body.custom_prompt)
 
     item.ai_tldr = result.get("tldr", item.ai_tldr)
     item.ai_summary = result.get("summary", item.ai_summary)

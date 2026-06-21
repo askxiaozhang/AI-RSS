@@ -174,13 +174,14 @@ class AIProcessor:
     # Public API
     # ------------------------------------------------------------------
 
-    async def summarize_article(self, title: str, content: str) -> Dict[str, Any]:
+    async def summarize_article(self, title: str, content: str, custom_prompt: Optional[str] = None) -> Dict[str, Any]:
         """
         Generates a structured analysis including TL;DR, highlights, summary,
         an importance score (1–10), and 3–5 keyword tags.
         """
+        extra = f"\n\nAdditional user instruction: {custom_prompt.strip()}" if custom_prompt and custom_prompt.strip() else ""
         prompt = f"""
-        Analyze the following article and return a structured JSON response.
+        Analyze the following article and return a structured JSON response.{extra}
 
         Title: {title}
         Content: {content}

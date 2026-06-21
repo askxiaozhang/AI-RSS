@@ -86,8 +86,8 @@ export const itemsApi = {
     api.post(`/items/${id}/read`, null, { params: { read } }),
   markStarred: (id: string, starred = true) =>
     api.post(`/items/${id}/star`, null, { params: { starred } }),
-  summarize: (id: string) =>
-    api.post<SummarizeResult>(`/items/${id}/summarize`),
+  summarize: (id: string, customPrompt?: string) =>
+    api.post<SummarizeResult>(`/items/${id}/summarize`, { custom_prompt: customPrompt || null }),
 }
 
 export interface BrowserRenderResult {
