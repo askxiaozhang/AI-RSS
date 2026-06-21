@@ -146,15 +146,17 @@
         }
 
         .main-container {
-            display: grid;
-            grid-template-columns: 360px 1fr;
+            display: flex;
             flex-grow: 1;
             height: calc(100vh - 65px);
             overflow: hidden;
+            position: relative;
         }
 
         /* Left Panel / Sidebar */
         .sidebar {
+            width: 360px;
+            min-width: 360px;
             border-right: 1px solid var(--border-color);
             background: rgba(12, 14, 27, 0.4);
             padding: 1.5rem;
@@ -162,6 +164,209 @@
             flex-direction: column;
             gap: 1.5rem;
             overflow-y: auto;
+            overflow-x: hidden;
+            flex-shrink: 0;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.35s, padding 0.35s, border-color 0.35s;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            border-right-color: transparent;
+        }
+
+        /* Sidebar header with toggle button */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .sidebar-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .sidebar-toggle {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Floating expand button (shown when sidebar is collapsed) */
+        .sidebar-expand-float {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.55rem 0.65rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-expand-float:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Preset item with settings button */
+        .preset-btn-wrap {
+            position: relative;
+            display: flex;
+        }
+
+        .preset-btn-wrap .preset-btn {
+            width: 100%;
+        }
+
+        .preset-settings-icon {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid rgba(147, 51, 234, 0.35);
+            border-radius: 50%;
+            color: var(--color-primary);
+            font-size: 0.58rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .preset-btn-wrap:hover .preset-settings-icon {
+            opacity: 1;
+        }
+
+        .has-custom-prompt .preset-settings-icon {
+            opacity: 1;
+            background: rgba(147, 51, 234, 0.3);
+        }
+
+        /* Prompt settings modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: rgba(14, 16, 32, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            width: min(500px, 92vw);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 30px;
+            height: 30px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .modal-note {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            font-style: italic;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            background: rgba(14, 16, 32, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 3px solid var(--color-success);
+            color: var(--text-primary);
+            padding: 0.7rem 1.2rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.25s ease;
+            pointer-events: none;
         }
 
         .panel-title {
@@ -357,11 +562,13 @@
 
         /* Right Content Area */
         .content-area {
+            flex: 1;
             display: grid;
             grid-template-rows: 1fr 1fr;
             overflow: hidden;
             padding: 1.5rem;
             gap: 1.5rem;
+            min-width: 0;
         }
 
         .content-pane {
@@ -748,11 +955,24 @@
         </div>
     </header>
 
-    <div class="main-container">
-        
+    <div class="main-container" id="mainContainer">
+
+        <!-- Floating expand button (shown when sidebar is collapsed) -->
+        <button class="sidebar-expand-float" id="sidebarExpandFloat" onclick="toggleSidebar()" title="展开侧边栏">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
         <!-- Sidebar Controls -->
-        <aside class="sidebar">
-            
+        <aside class="sidebar" id="sidebar">
+
+            <!-- Sidebar header -->
+            <div class="sidebar-header">
+                <span class="sidebar-label"><i class="fa-solid fa-sliders" style="margin-right:0.35rem;"></i>控制面板</span>
+                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="折叠侧边栏">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
             <!-- Quick Presets -->
             <div class="card">
                 <div class="panel-title">
@@ -820,8 +1040,46 @@
                     <span>2. Parse & Extract Items</span>
                 </button>
             </div>
-            
+
+            <!-- Global AI Prompt Settings -->
+            <div class="card">
+                <div class="panel-title">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>AI 总结提示词</span>
+                </div>
+                <div class="form-group">
+                    <label style="margin-bottom:0.35rem;">全局提示词 <span class="shortcut">适用于所有信息源</span></label>
+                    <textarea id="globalAiPrompt" class="input-control" rows="4" placeholder="留空则使用默认提示词。&#10;例如：请用中文总结文章，重点提炼核心观点和关键数据，并指出潜在影响。"></textarea>
+                </div>
+                <button class="btn btn-secondary" onclick="saveGlobalPrompt()" style="margin-top:0.25rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> 保存全局提示词
+                </button>
+            </div>
+
         </aside>
+
+        <!-- Prompt Settings Modal -->
+        <div class="modal-overlay" id="promptModal">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-sliders" style="color:var(--color-primary);"></i> <span id="modalTitle">信息源提示词</span></h3>
+                    <button class="modal-close" onclick="closePromptModal()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="form-group">
+                    <label>单独 AI 总结提示词</label>
+                    <textarea id="modalPromptInput" class="input-control" rows="6" placeholder="留空则使用全局提示词。&#10;针对此信息源自定义 AI 总结方式，例如：&#10;请聚焦于技术细节和代码示例，忽略营销内容。"></textarea>
+                    <p class="modal-note">* 留空时将自动回退使用全局提示词设置</p>
+                </div>
+                <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+                    <button class="btn" onclick="savePresetPrompt()" style="flex:1;">
+                        <i class="fa-solid fa-floppy-disk"></i> 保存
+                    </button>
+                    <button class="btn btn-secondary" onclick="closePromptModal()" style="flex:1;">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Right Content & Summaries Area -->
         <main class="content-area">
@@ -969,6 +1227,86 @@
         let isLiveMode = true;
         let selectedPreset = null;
         let activeParsedItems = [];
+        let sidebarCollapsed = false;
+        let modalCurrentUrl = null;
+
+        // ===== Sidebar Collapse =====
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const expandBtn = document.getElementById('sidebarExpandFloat');
+            sidebarCollapsed = !sidebarCollapsed;
+
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                expandBtn.style.display = 'flex';
+            } else {
+                sidebar.classList.remove('collapsed');
+                expandBtn.style.display = 'none';
+            }
+
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+        };
+
+        // ===== Prompt Storage =====
+        function saveGlobalPrompt() {
+            const prompt = document.getElementById('globalAiPrompt').value;
+            localStorage.setItem('globalAiPrompt', prompt);
+            showToast('全局提示词已保存');
+        }
+
+        function loadGlobalPrompt() {
+            const saved = localStorage.getItem('globalAiPrompt') || '';
+            document.getElementById('globalAiPrompt').value = saved;
+        }
+
+        function getPromptForSource(url) {
+            const perSource = localStorage.getItem('promptFor_' + url);
+            if (perSource !== null) return perSource;
+            return localStorage.getItem('globalAiPrompt') || '';
+        }
+
+        // ===== Preset Prompt Modal =====
+        window.openPresetSettings = function(idx) {
+            const preset = presets[idx];
+            modalCurrentUrl = preset.url;
+
+            document.getElementById('modalTitle').textContent = preset.name + ' · 提示词';
+            const saved = localStorage.getItem('promptFor_' + preset.url) || '';
+            document.getElementById('modalPromptInput').value = saved;
+
+            document.getElementById('promptModal').classList.add('active');
+        };
+
+        window.closePromptModal = function() {
+            document.getElementById('promptModal').classList.remove('active');
+            modalCurrentUrl = null;
+        };
+
+        window.savePresetPrompt = function() {
+            const prompt = document.getElementById('modalPromptInput').value;
+            if (modalCurrentUrl) {
+                localStorage.setItem('promptFor_' + modalCurrentUrl, prompt);
+            }
+            closePromptModal();
+            renderPresets();
+            showToast('提示词已保存');
+        };
+
+        // ===== Toast =====
+        function showToast(message) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fa-solid fa-check" style="color:var(--color-success);margin-right:0.5rem;"></i>${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2200);
+        }
 
         // DOM elements
         const modeLive = document.getElementById('modeLive');
@@ -1000,6 +1338,18 @@
         // Initialize App
         function init() {
             renderPresets();
+            loadGlobalPrompt();
+
+            // Restore sidebar collapse state
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                toggleSidebar();
+            }
+
+            // Close modal on overlay click
+            document.getElementById('promptModal').addEventListener('click', function(e) {
+                if (e.target === this) closePromptModal();
+            });
+
             checkAPIStatus();
             setupEventListeners();
         }
@@ -1046,12 +1396,20 @@
 
         // Render Preset Scrapers List
         function renderPresets() {
-            presetsGrid.innerHTML = presets.map((p, idx) => `
-                <button class="preset-btn" onclick="applyPreset(${idx})">
-                    <i class="${p.icon}"></i>
-                    <span>${p.name}</span>
-                </button>
-            `).join('');
+            presetsGrid.innerHTML = presets.map((p, idx) => {
+                const hasCustom = !!localStorage.getItem('promptFor_' + p.url);
+                return `
+                    <div class="preset-btn-wrap ${hasCustom ? 'has-custom-prompt' : ''}">
+                        <button class="preset-btn" onclick="applyPreset(${idx})">
+                            <i class="${p.icon}"></i>
+                            <span>${p.name}</span>
+                        </button>
+                        <button class="preset-settings-icon" onclick="openPresetSettings(${idx})" title="设置此信息源的 AI 提示词">
+                            <i class="fa-solid fa-sliders"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
         // Apply Preset Site details
@@ -1291,12 +1649,14 @@
             try {
                 let data = null;
                 if (isLiveMode) {
+                    const customPrompt = getPromptForSource(targetUrl.value);
                     const response = await fetch('/api/agents/summarize-content', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             title: item.title,
-                            content: item.description || item.title
+                            content: item.description || item.title,
+                            ...(customPrompt ? { custom_prompt: customPrompt } : {})
                         })
                     });
                     if (response.ok) {

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Clock } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check, ChevronDown, Clock, Save, Sparkles } from 'lucide-react'
 import type { Feed, Subscription } from '../types'
 import { feedsApi } from '../api/client'
 
@@ -42,6 +42,20 @@ export default function FeedCard({ feed, subscription, itemCount = 0, onClick, o
   const [refreshInterval, setRefreshInterval] = useState(feed.refresh_interval)
   const [saving, setSaving] = useState(false)
   const selectRef = useRef<HTMLSelectElement>(null)
+
+  // Per-feed AI prompt
+  const promptKey = `ai_prompt_feed_${feed.id}`
+  const [showPrompt, setShowPrompt] = useState(false)
+  const [feedPrompt, setFeedPrompt] = useState(() => localStorage.getItem(promptKey) || '')
+  const [promptSaved, setPromptSaved] = useState(false)
+
+  const savePrompt = () => {
+    localStorage.setItem(promptKey, feedPrompt)
+    setPromptSaved(true)
+    setTimeout(() => setPromptSaved(false), 2000)
+  }
+
+  const hasCustomPrompt = !!localStorage.getItem(promptKey)
 
   const handleIntervalChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation()
@@ -116,6 +130,57 @@ export default function FeedCard({ feed, subscription, itemCount = 0, onClick, o
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Per-feed AI prompt */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => setShowPrompt((v) => !v)}
+          className="flex w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/60 px-2 py-1.5 text-[11px] text-slate-500 transition-colors hover:bg-slate-100"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+          <span>AI 提示词</span>
+          {hasCustomPrompt && (
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+          )}
+          <motion.span
+            animate={{ rotate: showPrompt ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="ml-auto"
+          >
+            <ChevronDown className="h-3 w-3" />
+          </motion.span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {showPrompt && (
+            <motion.div
+              key="feed-prompt"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 space-y-1.5">
+                <textarea
+                  value={feedPrompt}
+                  onChange={(e) => setFeedPrompt(e.target.value)}
+                  placeholder="留空则使用全局提示词..."
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] text-slate-600 outline-none transition focus:border-purple-300 focus:ring-2 focus:ring-purple-100"
+                />
+                <button
+                  onClick={savePrompt}
+                  className="flex w-full items-center justify-center gap-1 rounded-md bg-purple-50 py-1 text-[10px] font-semibold text-purple-700 transition-colors hover:bg-purple-100"
+                >
+                  {promptSaved ? <Check className="h-2.5 w-2.5" /> : <Save className="h-2.5 w-2.5" />}
+                  {promptSaved ? '已保存' : '保存提示词'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Subtle gradient highlight on hover */}
