@@ -6,7 +6,6 @@ import {
   Rss,
   BookOpen,
   MessageSquare,
-  TrendingUp,
   ArrowRight,
 } from 'lucide-react'
 import AnimatedPage from '../components/AnimatedPage'
@@ -73,7 +72,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-3xl font-bold tracking-tight"
+          className="text-3xl font-bold tracking-tight dark:text-slate-100"
         >
           你好 👋
         </motion.h1>
@@ -81,7 +80,7 @@ export default function Dashboard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="mt-2 text-slate-600"
+          className="mt-2 text-slate-600 dark:text-slate-400"
         >
           {unreadCount > 0
             ? `今天有 ${unreadCount} 篇新内容等你阅读`
@@ -111,7 +110,7 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div>
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-500">
           快速开始
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -126,7 +125,7 @@ export default function Dashboard() {
               >
                 <Link
                   to={action.to}
-                  className="group flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 backdrop-blur transition-all hover:border-transparent hover:shadow-lg"
+                  className="group flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 backdrop-blur transition-all hover:border-transparent hover:shadow-lg dark:border-slate-700/70 dark:bg-slate-800/80 dark:hover:border-slate-600/50 dark:hover:shadow-black/20"
                 >
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient} shadow-md`}
@@ -134,12 +133,12 @@ export default function Dashboard() {
                     <Icon className="h-5 w-5 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-slate-900 group-hover:text-brand-700">
+                    <h3 className="font-semibold text-slate-900 group-hover:text-brand-700 dark:text-slate-100 dark:group-hover:text-brand-400">
                       {action.label}
                     </h3>
-                    <p className="mt-0.5 text-sm text-slate-500">{action.description}</p>
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{action.description}</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600 dark:text-slate-600 dark:group-hover:text-brand-400" />
                 </Link>
               </motion.div>
             )
@@ -160,13 +159,13 @@ function StatCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white/80 p-4 backdrop-blur">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white/80 p-4 backdrop-blur dark:border-slate-700/70 dark:bg-slate-800/80">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
         {icon}
       </div>
       <div>
-        <div className="text-xl font-bold text-slate-900">{value}</div>
-        <div className="text-xs text-slate-500">{label}</div>
+        <div className="text-xl font-bold text-slate-900 dark:text-slate-100">{value}</div>
+        <div className="text-xs text-slate-500 dark:text-slate-500">{label}</div>
       </div>
     </div>
   )

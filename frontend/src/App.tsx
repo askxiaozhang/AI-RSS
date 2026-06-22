@@ -10,6 +10,9 @@ import FeedDetail from './pages/FeedDetail'
 import Chat from './pages/Chat'
 import FilterView from './pages/FilterView'
 import ReaderView from './pages/ReaderView'
+import Teams from './pages/Teams'
+import TeamDetail from './pages/TeamDetail'
+import JoinTeam from './pages/JoinTeam'
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const token = useAuthStore((s) => s.token)
@@ -21,6 +24,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/invite/:token" element={<JoinTeam />} />
       <Route
         path="/*"
         element={
@@ -36,6 +40,8 @@ export default function App() {
         <Route path="filter" element={<FilterView />} />
         <Route path="reader" element={<ReaderView />} />
         <Route path="chat" element={<Chat />} />
+        <Route path="teams" element={<Teams />} />
+        <Route path="teams/:teamId" element={<TeamDetail />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

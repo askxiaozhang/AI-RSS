@@ -64,6 +64,56 @@ export interface ChatMessage {
   created_at: string
 }
 
+export type TeamRole = 'admin' | 'member' | 'guest'
+
+export interface Team {
+  id: string
+  name: string
+  description?: string
+  owner_id: string
+  created_at: string
+  role?: TeamRole
+  member_count?: number
+  feed_count?: number
+}
+
+export interface TeamMember {
+  id: string
+  user_id: string
+  email: string
+  role: TeamRole
+  created_at: string
+}
+
+export interface TeamFeed {
+  id: string
+  feed_id: string
+  shared_by: string
+  created_at: string
+  title?: string
+  url?: string
+  feed_type?: string
+}
+
+export interface TeamInvite {
+  id: string
+  team_id: string
+  token: string
+  role: TeamRole
+  expires_at?: string | null
+  max_uses?: number | null
+  used_count: number
+  created_at: string
+}
+
+export interface TeamInvitePreview {
+  team_id: string
+  team_name: string
+  role: TeamRole
+  valid: boolean
+  reason?: string | null
+}
+
 export interface AgentTestResult {
   items_count: number
   items: Array<Record<string, any>>

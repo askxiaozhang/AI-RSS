@@ -45,8 +45,8 @@ export default function FeedDetail() {
   return (
     <AnimatedPage>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">订阅内容</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">订阅内容</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           {items.length} 篇未读文章
         </p>
       </div>

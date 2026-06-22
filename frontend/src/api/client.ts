@@ -9,6 +9,12 @@ import type {
   ChatMessage,
   AgentTestResult,
   SummarizeResult,
+  Team,
+  TeamMember,
+  TeamFeed,
+  TeamInvite,
+  TeamInvitePreview,
+  TeamRole,
 } from '../types'
 
 const api = axios.create({
@@ -140,6 +146,39 @@ export const chatApi = {
     api.post<ChatConversation>('/chat/conversations', null, { params: { title } }),
   sendMessage: (convId: string, content: string) =>
     api.post<ChatMessage>(`/chat/conversations/${convId}/messages`, { content }),
+}
+
+/* ---------- Teams ---------- */
+export const teamsApi = {
+  list: () => api.get<Team[]>('/teams/'),
+  create: (data: { name: string; description?: string }) => api.post<Team>('/teams/', data),
+  get: (id: string) => api.get<Team>(`/teams/${id}`),
+  update: (id: string, data: { name?: string; description?: string }) =>
+    api.patch<Team>(`/teams/${id}`, data),
+  remove: (id: string) => api.delete(`/teams/${id}`),
+
+  // members
+  listMembers: (id: string) => api.get<TeamMember[]>(`/teams/${id}/members`),
+  updateMemberRole: (id: string, userId: string, role: TeamRole) =>
+    api.patch<TeamMember>(`/teams/${id}/members/${userId}`, { role }),
+  removeMember: (id: string, userId: string) => api.delete(`/teams/${id}/members/${userId}`),
+  leave: (id: string) => api.delete(`/teams/${id}/leave`),
+
+  // shared feeds
+  listFeeds: (id: string) => api.get<TeamFeed[]>(`/teams/${id}/feeds`),
+  shareFeed: (id: string, feedId: string) =>
+    api.post<TeamFeed>(`/teams/${id}/feeds`, { feed_id: feedId }),
+  unshareFeed: (id: string, feedId: string) => api.delete(`/teams/${id}/feeds/${feedId}`),
+
+  // invites
+  listInvites: (id: string) => api.get<TeamInvite[]>(`/teams/${id}/invites`),
+  createInvite: (
+    id: string,
+    data: { role?: TeamRole; expires_in_hours?: number | null; max_uses?: number | null },
+  ) => api.post<TeamInvite>(`/teams/${id}/invites`, data),
+  revokeInvite: (id: string, inviteId: string) => api.delete(`/teams/${id}/invites/${inviteId}`),
+  previewInvite: (token: string) => api.get<TeamInvitePreview>(`/teams/invites/${token}`),
+  acceptInvite: (token: string) => api.post<Team>(`/teams/invites/${token}/accept`),
 }
 
 export default api

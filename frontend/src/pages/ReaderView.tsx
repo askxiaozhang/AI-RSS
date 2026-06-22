@@ -39,7 +39,7 @@ export default function ReaderView() {
 
   // Local state overlay (tracks changes made in this session)
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
-  const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set())   // forced unread
+  const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set())
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set())
   const [unstarredIds, setUnstarredIds] = useState<Set<string>>(new Set())
 
@@ -87,20 +87,16 @@ export default function ReaderView() {
     const timeOpt = TIME_OPTIONS.find((o) => o.value === timeFilter)!
 
     return allItems.filter((item) => {
-      // Feed filter
       if (selectedFeedId && item.feed_id !== selectedFeedId) return false
 
-      // Time filter
       if (timeOpt.hours !== null && item.published_at) {
         const diff = (now - new Date(item.published_at).getTime()) / 3_600_000
         if (diff > timeOpt.hours) return false
       }
 
-      // Status filter
       if (statusFilter === 'unread' && isRead(item)) return false
       if (statusFilter === 'starred' && !isStarred(item)) return false
 
-      // Search
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         if (
@@ -138,7 +134,6 @@ export default function ReaderView() {
     if (!item) return
     const nowRead = forceRead !== undefined ? forceRead : !isRead(item)
 
-    // Optimistic update
     if (nowRead) {
       setReadIds((p) => new Set([...p, id]))
       setUnreadIds((p) => { const n = new Set(p); n.delete(id); return n })
@@ -160,14 +155,12 @@ export default function ReaderView() {
     await itemsApi.markStarred(id, starred)
   }
 
-  // Mark all visible as read
   const handleMarkAllRead = async () => {
     const ids = filteredItems.filter((i) => !isRead(i)).map((i) => i.id)
     setReadIds((p) => new Set([...p, ...ids]))
     await Promise.all(ids.map((id) => itemsApi.markRead(id, true)))
   }
 
-  // Feeds that have items
   const feedsWithItems = useMemo(
     () => feeds.filter((f) => allItems.some((i) => i.feed_id === f.id)),
     [feeds, allItems],
@@ -177,29 +170,31 @@ export default function ReaderView() {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-slate-50/30">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* ── Left sidebar ─────────────────────────────────────────── */}
-      <aside className="flex w-56 shrink-0 flex-col overflow-y-auto border-r border-slate-200/70 bg-white px-3 py-4">
+      <aside className="flex w-56 shrink-0 flex-col overflow-y-auto border-r border-slate-200/70 bg-white px-3 py-4 dark:border-slate-800/70 dark:bg-slate-900">
         {/* Status tabs */}
         <div className="mb-5 space-y-0.5">
           {[
-            { value: 'all',    label: '全部文章',  icon: BookOpen,  count: allItems.length },
-            { value: 'unread', label: '未读',      icon: Inbox,     count: totalUnread },
-            { value: 'starred',label: '已收藏',    icon: Bookmark,  count: allItems.filter(isStarred).length },
+            { value: 'all',     label: '全部文章', icon: BookOpen,  count: allItems.length },
+            { value: 'unread',  label: '未读',     icon: Inbox,     count: totalUnread },
+            { value: 'starred', label: '已收藏',   icon: Bookmark,  count: allItems.filter(isStarred).length },
           ].map(({ value, label, icon: Icon, count }) => (
             <button
               key={value}
               onClick={() => setStatusFilter(value as StatusFilter)}
               className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
                 statusFilter === value
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-400'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
               <span className="flex-1 text-left">{label}</span>
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                statusFilter === value ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500'
+                statusFilter === value
+                  ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500'
               }`}>
                 {count}
               </span>
@@ -209,7 +204,7 @@ export default function ReaderView() {
 
         {/* Time filter */}
         <div className="mb-5">
-          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
             时间范围
           </p>
           <div className="space-y-0.5">
@@ -219,8 +214,8 @@ export default function ReaderView() {
                 onClick={() => setTimeFilter(opt.value)}
                 className={`flex w-full items-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   timeFilter === opt.value
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                    ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800/60 dark:hover:text-slate-300'
                 }`}
               >
                 {opt.label}
@@ -231,14 +226,16 @@ export default function ReaderView() {
 
         {/* Feed list */}
         <div>
-          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-600">
             订阅源
           </p>
           <div className="space-y-0.5">
             <button
               onClick={() => setSelectedFeedId(null)}
               className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                !selectedFeedId ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'
+                !selectedFeedId
+                  ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
+                  : 'text-slate-500 hover:bg-slate-50 dark:text-slate-500 dark:hover:bg-slate-800/60'
               }`}
             >
               <Filter className="h-3.5 w-3.5 shrink-0" />
@@ -252,14 +249,14 @@ export default function ReaderView() {
                   onClick={() => setSelectedFeedId(selectedFeedId === feed.id ? null : feed.id)}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     selectedFeedId === feed.id
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-400'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800/60 dark:hover:text-slate-300'
                   }`}
                 >
                   <Rss className="h-3.5 w-3.5 shrink-0" />
                   <span className="flex-1 truncate text-left">{feed.title}</span>
                   {unread > 0 && (
-                    <span className="rounded-full bg-brand-100 px-1.5 text-[10px] font-semibold text-brand-700">
+                    <span className="rounded-full bg-brand-100 px-1.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
                       {unread}
                     </span>
                   )}
@@ -273,40 +270,37 @@ export default function ReaderView() {
       {/* ── Main content ─────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white px-5 py-2.5">
-          <span className="text-sm font-medium text-slate-500">
-            {filteredItems.length > 0
-              ? `${filteredItems.length} 篇`
-              : '0 篇'}
+        <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white px-5 py-2.5 dark:border-slate-800/70 dark:bg-slate-900">
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            {filteredItems.length > 0 ? `${filteredItems.length} 篇` : '0 篇'}
           </span>
 
           {/* Mark all read */}
           {statusFilter === 'unread' && filteredItems.length > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
             >
               全部标为已读
             </button>
           )}
 
-          {/* Spacer */}
           <div className="flex-1" />
 
           {/* Search */}
           <div className="relative w-60">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索文章…"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-800 dark:focus:ring-brand-900/20"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -315,9 +309,9 @@ export default function ReaderView() {
         </div>
 
         {/* Article list */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-slate-400">
+            <div className="flex items-center justify-center gap-2 py-20 text-slate-400 dark:text-slate-600">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span className="text-sm">加载中…</span>
             </div>
@@ -325,21 +319,21 @@ export default function ReaderView() {
             <div className="flex flex-col items-center gap-2 py-20 text-slate-500">
               <AlertCircle className="h-8 w-8 text-red-400" />
               <p className="text-sm">{error}</p>
-              <button onClick={load} className="text-sm text-brand-600 hover:underline">重试</button>
+              <button onClick={load} className="text-sm text-brand-600 hover:underline dark:text-brand-400">重试</button>
             </div>
           ) : allItems.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-20 text-slate-400">
+            <div className="flex flex-col items-center gap-3 py-20 text-slate-400 dark:text-slate-600">
               <Inbox className="h-10 w-10" />
               <div className="text-center">
-                <p className="font-medium text-slate-600">还没有文章</p>
+                <p className="font-medium text-slate-600 dark:text-slate-400">还没有文章</p>
                 <p className="mt-1 text-sm">先在「订阅源」页面添加并订阅 RSS 源</p>
               </div>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-20 text-slate-400">
+            <div className="flex flex-col items-center gap-3 py-20 text-slate-400 dark:text-slate-600">
               <Filter className="h-8 w-8" />
               <div className="text-center">
-                <p className="font-medium text-slate-600">没有符合条件的文章</p>
+                <p className="font-medium text-slate-600 dark:text-slate-400">没有符合条件的文章</p>
                 <p className="mt-1 text-sm">
                   {statusFilter === 'unread' ? '所有文章都已读完 🎉' : '尝试调整筛选条件'}
                 </p>
@@ -347,7 +341,7 @@ export default function ReaderView() {
               {statusFilter === 'unread' && (
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className="mt-1 rounded-lg bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100"
+                  className="mt-1 rounded-lg bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 dark:bg-brand-900/20 dark:text-brand-400 dark:hover:bg-brand-900/40"
                 >
                   查看全部文章
                 </button>
@@ -355,7 +349,7 @@ export default function ReaderView() {
             </div>
           ) : (
             <AnimatePresence initial={false}>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredItems.map((item, i) => {
                   const feed = feeds.find((f) => f.id === item.feed_id)
                   return (
