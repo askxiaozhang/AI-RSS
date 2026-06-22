@@ -150,7 +150,10 @@ export default function Login() {
 
           <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             还没有账号？{' '}
-            <Link to="/register" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+            <Link
+              to={next !== '/' ? `/register?next=${encodeURIComponent(next)}` : '/register'}
+              className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+            >
               立即注册
             </Link>
           </p>

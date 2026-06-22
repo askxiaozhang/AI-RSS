@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, ArrowRight, Rss } from 'lucide-react'
 import { authApi } from '../api/client'
@@ -7,6 +7,8 @@ import { useAuthStore } from '../store/authStore'
 
 export default function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const next = searchParams.get('next') || '/'
   const setAuth = useAuthStore((s) => s.setAuth)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +23,7 @@ export default function Register() {
       const { data: user } = await authApi.register(email, password)
       const { data: tokenData } = await authApi.login(email, password)
       setAuth(tokenData.access_token, user)
-      navigate('/')
+      navigate(next)
     } catch (err: any) {
       setError(err.response?.data?.detail || '注册失败，请稍后再试')
     } finally {
@@ -119,7 +121,10 @@ export default function Register() {
 
           <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             已有账号？{' '}
-            <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+            <Link
+              to={next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+              className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+            >
               立即登录
             </Link>
           </p>
