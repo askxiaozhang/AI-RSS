@@ -53,7 +53,7 @@ export default function FilterView() {
           <Sparkles className="h-3.5 w-3.5" />
           即将上线
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
           智能<span className="text-gradient">过滤</span>
         </h1>
         <p className="mt-2 max-w-2xl text-slate-600">
@@ -82,9 +82,9 @@ export default function FilterView() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-6 rounded-2xl border border-slate-200/70 bg-white/80 p-5 backdrop-blur"
+        className="mb-6 rounded-2xl border border-slate-200/70 bg-white/80 p-5 backdrop-blur dark:border-slate-700/70 dark:bg-slate-800/80"
       >
-        <label className="mb-2 block text-sm font-medium text-slate-700">
+        <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
           添加过滤规则
         </label>
         <div className="flex gap-2">
@@ -93,7 +93,7 @@ export default function FilterView() {
             value={newPrompt}
             onChange={(e) => setNewPrompt(e.target.value)}
             placeholder="例如：只要关于 TypeScript 的文章…"
-            className="flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+            className="flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-700 dark:focus:ring-brand-900/30"
           />
           <button
             type="submit"
@@ -115,7 +115,7 @@ export default function FilterView() {
               key={ex}
               type="button"
               onClick={() => setNewPrompt(ex)}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-400 dark:hover:border-brand-600 dark:hover:bg-brand-900/20 dark:hover:text-brand-400"
             >
               {ex}
             </button>
@@ -129,7 +129,7 @@ export default function FilterView() {
           我的过滤规则
         </h2>
         {rules.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-white/50 p-8 text-center text-sm text-slate-400">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white/50 p-8 text-center text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-600">
             还没有过滤规则，添加一个试试
           </div>
         ) : (
@@ -142,14 +142,14 @@ export default function FilterView() {
                 transition={{ delay: i * 0.05 }}
                 className={`flex items-start gap-3 rounded-xl border p-4 transition-all ${
                   rule.active
-                    ? 'border-slate-200/70 bg-white/80'
-                    : 'border-slate-100 bg-slate-50/50 opacity-60'
+                    ? 'border-slate-200/70 bg-white/80 dark:border-slate-700/70 dark:bg-slate-800/80'
+                    : 'border-slate-100 bg-slate-50/50 opacity-60 dark:border-slate-800 dark:bg-slate-800/30'
                 }`}
               >
                 <button
                   onClick={() => toggleRule(rule.id)}
                   className={`mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 transition-colors ${
-                    rule.active ? 'bg-brand-500' : 'bg-slate-300'
+                    rule.active ? 'bg-brand-500' : 'bg-slate-300 dark:bg-slate-600'
                   }`}
                 >
                   <motion.span
@@ -161,16 +161,16 @@ export default function FilterView() {
                 </button>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5 text-slate-400" />
-                    <span className="text-xs font-medium text-slate-500">
+                    <Filter className="h-3.5 w-3.5 text-slate-400 dark:text-slate-600" />
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       规则 {i + 1}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-slate-700">{rule.prompt}</p>
+                  <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{rule.prompt}</p>
                 </div>
                 <button
                   onClick={() => removeRule(rule.id)}
-                  className="shrink-0 text-xs text-slate-400 hover:text-red-500"
+                  className="shrink-0 text-xs text-slate-400 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400"
                 >
                   移除
                 </button>

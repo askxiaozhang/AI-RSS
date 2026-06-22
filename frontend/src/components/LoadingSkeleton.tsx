@@ -4,7 +4,7 @@ export default function LoadingSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-slate-100 bg-white/60 p-5"
+          className="rounded-xl border border-slate-100 bg-white/60 p-5 dark:border-slate-800 dark:bg-slate-800/60"
         >
           <div className="shimmer mb-3 h-5 w-3/4 rounded-md" />
           <div className="shimmer h-3 w-1/2 rounded-md" />

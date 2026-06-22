@@ -103,10 +103,10 @@ export default function Chat() {
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             对话助手
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             基于你的订阅内容提问，AI 为你找到答案
           </p>
         </div>
@@ -121,9 +121,9 @@ export default function Chat() {
 
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Conversation list */}
-        <div className="hidden w-64 shrink-0 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white/80 p-3 backdrop-blur md:block">
+        <div className="hidden w-64 shrink-0 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white/80 p-3 backdrop-blur dark:border-slate-700/70 dark:bg-slate-800/80 md:block">
           {conversations.length === 0 ? (
-            <div className="p-4 text-center text-xs text-slate-400">
+            <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-600">
               还没有对话
             </div>
           ) : (
@@ -134,8 +134,8 @@ export default function Chat() {
                   onClick={() => setActiveConv(conv)}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                     activeConv?.id === conv.id
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-400'
+                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'
                   }`}
                 >
                   <MessageSquare className="h-4 w-4" />
@@ -147,15 +147,15 @@ export default function Chat() {
         </div>
 
         {/* Chat area */}
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur dark:border-slate-700/70 dark:bg-slate-800/80">
           {!activeConv ? (
             <div className="flex flex-1 items-center justify-center p-8 text-center">
               <div>
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-100 to-purple-100">
                   <Sparkles className="h-7 w-7 text-brand-600" />
                 </div>
-                <h3 className="font-semibold text-slate-900">开始一段新对话</h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">开始一段新对话</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   点击「新对话」向 AI 提问关于你的订阅内容
                 </p>
               </div>
@@ -201,7 +201,7 @@ export default function Chat() {
                         className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm ${
                           msg.sender === 'user'
                             ? 'bg-brand-600 text-white'
-                            : 'bg-slate-100 text-slate-800'
+                            : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
                         }`}
                       >
                         {msg.content}
@@ -218,8 +218,8 @@ export default function Chat() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-purple-700">
                       <Bot className="h-4 w-4" />
                     </div>
-                    <div className="rounded-2xl bg-slate-100 px-4 py-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                    <div className="rounded-2xl bg-slate-100 px-4 py-3 dark:bg-slate-700">
+                      <Loader2 className="h-4 w-4 animate-spin text-slate-400 dark:text-slate-500" />
                     </div>
                   </motion.div>
                 )}
@@ -228,7 +228,7 @@ export default function Chat() {
               {/* Input */}
               <form
                 onSubmit={handleSend}
-                className="border-t border-slate-100 p-4"
+                className="border-t border-slate-100 p-4 dark:border-slate-700"
               >
                 <div className="flex gap-2">
                   <input
@@ -237,7 +237,7 @@ export default function Chat() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="问 AI 关于你的订阅内容…"
                     disabled={sending}
-                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-2.5 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-2.5 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-700 dark:focus:ring-brand-900/30"
                   />
                   <button
                     type="submit"

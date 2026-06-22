@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, Lock, ArrowRight, Rss } from 'lucide-react'
 import { authApi } from '../api/client'
@@ -7,6 +7,8 @@ import { useAuthStore } from '../store/authStore'
 
 export default function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const next = searchParams.get('next') || '/'
   const setAuth = useAuthStore((s) => s.setAuth)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +23,7 @@ export default function Register() {
       const { data: user } = await authApi.register(email, password)
       const { data: tokenData } = await authApi.login(email, password)
       setAuth(tokenData.access_token, user)
-      navigate('/')
+      navigate(next)
     } catch (err: any) {
       setError(err.response?.data?.detail || '注册失败，请稍后再试')
     } finally {
@@ -30,7 +32,7 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-[100dvh] items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -47,38 +49,38 @@ export default function Register() {
           >
             <Rss className="h-8 w-8 text-white" strokeWidth={2.5} />
           </motion.div>
-          <h1 className="text-2xl font-bold">AI-RSS</h1>
-          <p className="mt-1 text-sm text-slate-500">智能信息聚合平台</p>
+          <h1 className="text-2xl font-bold dark:text-slate-100">AI-RSS</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">智能信息聚合平台</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-8 shadow-xl backdrop-blur">
-          <h2 className="mb-6 text-lg font-semibold">创建账号</h2>
+        <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-8 shadow-xl backdrop-blur dark:border-slate-700/70 dark:bg-slate-800/80">
+          <h2 className="mb-6 text-lg font-semibold dark:text-slate-100">创建账号</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 邮箱
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-700 dark:focus:ring-brand-900/30"
                 />
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 密码
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <input
                   type="password"
                   value={password}
@@ -86,7 +88,7 @@ export default function Register() {
                   placeholder="至少 6 位字符"
                   required
                   minLength={6}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-700 dark:focus:ring-brand-900/30"
                 />
               </div>
             </div>
@@ -95,7 +97,7 @@ export default function Register() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
+                className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400"
               >
                 {error}
               </motion.p>
@@ -117,9 +119,12 @@ export default function Register() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
             已有账号？{' '}
-            <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700">
+            <Link
+              to={next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+              className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+            >
               立即登录
             </Link>
           </p>
